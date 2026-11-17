@@ -1,5 +1,4 @@
 import {
-  ALLOWED_SCORING,
   DEFAULT_MARKS,
   DEFAULT_SCORING,
   type AssessmentDetail,
@@ -12,6 +11,8 @@ import {
   type VersionPatch,
 } from '../api'
 import { htmlToText } from '../ui/html'
+
+export const CODE_LANGUAGES = ['javascript', 'typescript', 'python', 'java', 'csharp', 'sql', 'html', 'css', 'go', 'php']
 
 let counter = 0
 export const uid = () => `k${Date.now().toString(36)}${(counter++).toString(36)}`

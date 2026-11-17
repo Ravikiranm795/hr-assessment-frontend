@@ -58,11 +58,13 @@ type Report = (type: ExamEventType, extra?: { durationMs?: number; meta?: Record
 class Spell {
   private startedAt: number | null = null
   private reportedUntil = 0
+  private readonly type: ExamEventType
+  private readonly report: Report
 
-  constructor(
-    private readonly type: ExamEventType,
-    private readonly report: Report,
-  ) {}
+  constructor(type: ExamEventType, report: Report) {
+    this.type = type
+    this.report = report
+  }
 
   update(on: boolean, now: number) {
     if (on) {
@@ -97,8 +99,10 @@ export class FaceWatch {
   private readonly away: Spell
   private multiRun = 0
   private lastMulti = -Infinity
+  private readonly report: Report
 
-  constructor(private readonly report: Report) {
+  constructor(report: Report) {
+    this.report = report
     this.noFace = new Spell('no_face', report)
     this.away = new Spell('looking_away', report)
   }

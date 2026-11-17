@@ -1,0 +1,32 @@
+{
+  "inbox": {
+    "heading": "Help requests",
+    "filterStatus": "Status",
+    "allStatuses": "All statuses",
+    "statuses": { "open": "Pending", "approved": "Approved", "declined": "Declined" },
+    "reasons": {
+      "no_camera": "No camera",
+      "camera_not_working": "Camera not working",
+      "extra_time": "Needs extra time",
+      "other": "Other"
+    },
+    "candidate": "Candidate",
+    "role": "Role",
+    "reason": "Reason",
+    "requested": "Requested",
+    "status": "Status",
+    "decision": "Decision",
+    "emptyTitle": "No help requests",
+    "emptyBody": "Requests from candidates will appear here.",
+    "approve": "Approve",
+    "decline": "Decline",
+    "approveTitle": "Approve help request",
+    "declineTitle": "Decline help request",
+    "approved": "The request was approved.",
+    "declined": "The request was declined.",
+    "cameraExempt": "Grant a camera exemption",
+    "extraMinutes": "Extra minutes",
+    "note": "Note (optional)",
+    "noteRequired": "Note for the candidate (required)"
+  }
+}

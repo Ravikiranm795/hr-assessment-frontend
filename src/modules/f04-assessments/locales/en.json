@@ -1,0 +1,269 @@
+{
+  "assessments": {
+    "status": {
+      "active": "Active",
+      "archived": "Archived",
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "field": {
+      "title": "Title",
+      "description": "Description"
+    },
+    "question_type": {
+      "single_choice": "Single choice",
+      "multi_choice": "Multiple choice",
+      "fill_blank": "Fill in the blanks",
+      "code_gap": "Code gap",
+      "short_answer": "Short answer"
+    },
+    "scoring": {
+      "auto": "Automatic",
+      "ai": "AI",
+      "manual": "Manual"
+    },
+    "language": {
+      "none": "Not specified",
+      "javascript": "JavaScript",
+      "typescript": "TypeScript",
+      "python": "Python",
+      "java": "Java",
+      "csharp": "C#",
+      "sql": "SQL",
+      "html": "HTML",
+      "css": "CSS",
+      "go": "Go",
+      "php": "PHP"
+    },
+    "issue": {
+      "no_questions": "Add at least one question.",
+      "prompt_empty": "Write the question text.",
+      "marks_invalid": "Marks must be a number greater than zero.",
+      "model_answer_required": "Add a model answer or key points for questions scored by AI.",
+      "too_few_options": "Add at least two answer options.",
+      "no_correct_option": "Mark at least one option as correct.",
+      "multiple_correct_options": "A single choice question can have only one correct option.",
+      "no_blanks": "Add at least one blank.",
+      "blank_without_answers": "Every blank needs at least one accepted answer.",
+      "unknown": "This question is not ready to publish."
+    },
+    "list": {
+      "title": "Assessments",
+      "subtitle": "Build, version and publish the assessments your candidates take.",
+      "create": "New assessment",
+      "search": "Search by title",
+      "searchPlaceholder": "Search assessments",
+      "statusFilter": "Status",
+      "statusAll": "All statuses",
+      "mine": "Mine only",
+      "col": {
+        "title": "Title",
+        "owner": "Owner",
+        "status": "Status",
+        "versions": "Versions",
+        "updated": "Last updated"
+      },
+      "ownerYou": "You",
+      "ownerColleague": "Team member",
+      "versionsCell": "v{{latest}} ({{count}} in total)",
+      "actionsFor": "Actions for {{title}}",
+      "action": {
+        "edit": "Edit",
+        "view": "View",
+        "duplicate": "Duplicate",
+        "preview": "Preview",
+        "archive": "Archive",
+        "unarchive": "Unarchive",
+        "delete": "Delete"
+      },
+      "empty": {
+        "title": "No assessments yet",
+        "body": "Create your first assessment: give it a title, add questions, then publish it so it can be linked to an open role."
+      },
+      "emptyFiltered": {
+        "title": "No assessments match",
+        "body": "Try a different search or change the filters."
+      },
+      "duplicated": "Copy created. You are now the owner of the new assessment.",
+      "archived": "Assessment archived.",
+      "unarchived": "Assessment restored.",
+      "deleted": "Assessment deleted.",
+      "deleteTitle": "Delete this assessment?",
+      "deleteBody": "\"{{title}}\" and all of its versions will be removed. This cannot be undone.",
+      "deleteBlocked": "This assessment is linked to an open role. Close or change the role first, then delete it."
+    },
+    "create": {
+      "title": "New assessment",
+      "body": "Give the assessment a title. You add questions on the next screen.",
+      "submit": "Create and open"
+    },
+    "builder": {
+      "back": "Back to assessments",
+      "untitled": "Untitled assessment",
+      "loadFailed": "This assessment could not be loaded.",
+      "saveDraft": "Save draft",
+      "saved": "Draft saved.",
+      "preview": "Preview",
+      "publish": "Publish",
+      "reload": "Reload",
+      "notOwner": "You can view this assessment but only its owner or an organization administrator can change it.",
+      "previewStale": "Some changes could not be saved, so the preview shows the last saved version.",
+      "status": {
+        "saving": "Saving…",
+        "unsaved": "Unsaved changes",
+        "saved": "All changes saved at {{time}}",
+        "upToDate": "All changes saved",
+        "attention_one": "{{count}} item needs your attention before it can be saved",
+        "attention_other": "{{count}} items need your attention before they can be saved",
+        "published": "Published: read only",
+        "readOnly": "Read only"
+      }
+    },
+    "version": {
+      "label": "Versions",
+      "switch": "Switch version",
+      "current": "Version {{n}} ({{count}} of {{max}} used)",
+      "short": "v{{n}}",
+      "create": "Create new version",
+      "created": "Version {{n}} created as a draft.",
+      "goToDraft": "Open draft v{{n}}",
+      "locked": "Version {{n}} is published and locked, so it is shown read only.",
+      "lockedEditable": "Version {{n}} is published and locked. To change anything, create a new version: it copies everything into a new draft that you edit and publish.",
+      "purgeTitle": "Create a new version?",
+      "purgeBody": "An assessment keeps at most {{max}} versions. Creating another removes the oldest version that no open role, invite or attempt depends on."
+    },
+    "settings": {
+      "title": "Settings",
+      "duration": "Duration (minutes)",
+      "durationHint": "Between 5 and 480 minutes.",
+      "durationRange": "Enter a whole number between 5 and 480.",
+      "passMark": "Pass mark (%)",
+      "passMarkHint": "Between 0 and 100.",
+      "passMarkRange": "Enter a number between 0 and 100.",
+      "instructions": "Instructions for candidates",
+      "shuffleQuestions": "Shuffle the order of questions",
+      "shuffleOptions": "Shuffle answer options"
+    },
+    "questions": {
+      "title": "Questions",
+      "summary_one": "{{count}} question, {{marks}} marks in total",
+      "summary_other": "{{count}} questions, {{marks}} marks in total",
+      "add": "Add question",
+      "empty": "No questions yet. Use Add question to start, or let AI suggest some.",
+      "emptyReadOnly": "This version has no questions."
+    },
+    "question": {
+      "label": "Question {{n}}",
+      "drag": "Drag to reorder question {{n}}",
+      "remove": "Remove question {{n}}",
+      "removeShort": "Remove",
+      "prompt": "Question text",
+      "marks": "Marks",
+      "scoring": "Scoring",
+      "options": "Answer options",
+      "optionsHintSingle": "Select the one correct option.",
+      "optionsHintMulti": "Tick every correct option.",
+      "optionN": "Option {{n}}",
+      "markCorrect": "Option {{n}} is correct",
+      "addOption": "Add option",
+      "removeOption": "Remove option {{n}}",
+      "partial": "Give partial credit for partly correct answers",
+      "blanks": "Blanks",
+      "gaps": "Code gaps",
+      "slotsHint": "Add one entry per blank, in order. Write every accepted answer on its own line.",
+      "blankN": "Blank {{n}}: accepted answers",
+      "gapN": "Gap {{n}}: accepted code",
+      "addBlank": "Add blank",
+      "addGap": "Add gap",
+      "removeSlot": "Remove entry {{n}}",
+      "caseSensitive": "Match upper and lower case exactly",
+      "language": "Code language",
+      "aiNeedsAnswer": "AI scoring needs a model answer or key points to compare with.",
+      "modelOptional": "Optional notes for reviewers.",
+      "modelAnswer": "Model answer",
+      "keyPoints": "Key points (one per line)"
+    },
+    "branding": {
+      "title": "Branding",
+      "body": "Shown to candidates at the top and bottom of the exam.",
+      "company": "Company name in the header",
+      "logoNote": "The header logo comes from your organization branding once the backend supports choosing it here.",
+      "footer": "Footer text (for example a policy statement)"
+    },
+    "publish": {
+      "confirmTitle": "Publish version {{n}}?",
+      "confirmBody": "Publishing locks this version. To change it later you create a new version.",
+      "done": "Version {{n}} published.",
+      "problemsTitle": "Fix these before publishing",
+      "problemsBody": "The version cannot be published until every item below is resolved.",
+      "goTo": "Go to question"
+    },
+    "preview": {
+      "title": "Candidate preview",
+      "body": "Exactly what a candidate sees: header, instructions, questions, footer and watermark.",
+      "meta": "{{minutes}} minutes, {{marks}} marks",
+      "instructions": "Instructions",
+      "noQuestions": "This version has no questions yet.",
+      "questionNo": "Question {{n}}",
+      "marks": "{{marks}} marks",
+      "blankNo": "Answer {{n}}",
+      "yourAnswer": "Your answer"
+    },
+    "ai": {
+      "open": "AI suggestions",
+      "title": "AI question suggestions",
+      "body": "Describe the role and AI proposes questions. You choose which ones to add.",
+      "field": {
+        "role": "Role title",
+        "jd": "Job description",
+        "level": "Experience level",
+        "skills": "Key skills",
+        "skillsHint": "Separate with commas.",
+        "difficultyMix": "Difficulty mix (relative weights)",
+        "typeMix": "Question type mix (relative weights)",
+        "count": "Number of questions",
+        "countHint": "Between {{min}} and {{max}}.",
+        "domain": "Domain",
+        "avoid": "Topics to avoid",
+        "explain": "Explain the role in simple words"
+      },
+      "level": {
+        "entry": "Entry level",
+        "junior": "Junior",
+        "mid": "Mid level",
+        "senior": "Senior",
+        "lead": "Lead"
+      },
+      "difficulty": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+      },
+      "moreOptions": "More options",
+      "lessOptions": "Fewer options",
+      "generate": "Suggest questions",
+      "generating": "Generating questions…",
+      "generatingHint": "This can take up to a minute and a half. Keep this window open.",
+      "resultsHint_one": "{{count}} question suggested. Untick any you do not want; the rest are added to the builder.",
+      "resultsHint_other": "{{count}} questions suggested. Untick any you do not want; the rest are added to the builder.",
+      "resultsLabel": "Suggested questions",
+      "addSelected": "Add selected ({{count}})",
+      "discard": "Discard all",
+      "added_one": "{{count}} question added.",
+      "added_other": "{{count}} questions added."
+    },
+    "editor": {
+      "toolbar": "Text formatting",
+      "bold": "Bold",
+      "italic": "Italic",
+      "bulletList": "Bulleted list",
+      "orderedList": "Numbered list",
+      "codeBlock": "Code block"
+    },
+    "leave": {
+      "title": "Leave without saving?",
+      "body": "You have changes that are not saved yet. If you leave now they are lost.",
+      "confirm": "Leave"
+    }
+  }
+}

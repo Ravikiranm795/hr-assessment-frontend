@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { TFunction } from 'i18next'
 import { ArrowLeft } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -85,7 +86,7 @@ function RoleDetailBody({ role, isManager, isAdmin, canInvite, canBulk, canEmail
   const client = useQueryClient()
   const toast = useToast()
   const { me } = useAuth()
-  const tz = me?.organization.timezone
+  const tz = me?.organization?.timezone
   const [editing, setEditing] = useState(false)
   const [reassigning, setReassigning] = useState(false)
   const [picking, setPicking] = useState(false)
@@ -375,6 +376,6 @@ function DecisionBadge({ row }: { row: InviteListItem }) {
   return <Badge value={decision} label={decisionLabel(t, decision)} />
 }
 
-type T = (key: string, options?: Record<string, unknown>) => string
+type T = TFunction
 const statusLabel = (t: T, value: string) => t(`roles.invite.status.${value}`, { defaultValue: value })
 const decisionLabel = (t: T, value: string) => t(`roles.decision.${value}`, { defaultValue: value })

@@ -1,0 +1,218 @@
+{
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Describe the report you need in your own words. Choose an interpretation, pick the columns and download a file.",
+    "platformTitle": "Platform reports",
+    "platformSubtitle": "Organization-level reports built from a structured filter. No candidate content is included.",
+    "retention": "Generated files are deleted after 7 days; the request stays in the history.",
+    "startOver": "Start over",
+    "another": "Make another report",
+    "generate": "Generate report",
+    "ask": {
+      "title": "What report do you need?",
+      "privacy": "The AI only sees the list of available fields and your words. It never sees any data rows.",
+      "label": "Describe the report",
+      "placeholder": "For example: rejected candidates from October with their scores",
+      "examples": "Try:",
+      "example": {
+        "rejected": "Rejected candidates with their scores",
+        "roles": "Open roles with the number of invites",
+        "team": "Active team members and their last sign-in"
+      },
+      "source": "Limit to one kind of data (optional)",
+      "anySource": "Any data",
+      "submit": "Interpret my request",
+      "thinking": "Interpreting your request…",
+      "thinkingHint": "This usually takes a few seconds.",
+      "thinkingSlow": "This is taking longer than usual. You can keep waiting or cancel and try again."
+    },
+    "choose": {
+      "title": "Which of these did you mean?",
+      "use": "Use this report",
+      "estimate_one": "about {{rows}} row",
+      "estimate_other": "about {{rows}} rows",
+      "noEstimate": "row count not available"
+    },
+    "refine": {
+      "label": "None of these? Refine your request",
+      "placeholder": "For example: only the engineering department",
+      "submit": "Refine"
+    },
+    "confirmed": {
+      "title": "Review and generate",
+      "conditions": "Conditions",
+      "noConditions": "No conditions: every record of this kind is included.",
+      "countBy": "One row per {{field}} with the number of records.",
+      "countByMonth": "One row per month of {{field}} with the number of records."
+    },
+    "count": {
+      "loading": "Counting rows…",
+      "rows_one": "{{rows}} row will be included.",
+      "rows_other": "{{rows}} rows will be included."
+    },
+    "columns": {
+      "title": "Columns",
+      "hint": "The suggested columns are ticked. Add or remove any of them.",
+      "pii": "Personal data"
+    },
+    "format": {
+      "title": "File format",
+      "csv": "CSV (up to {{max}} rows)",
+      "pdf": "PDF (up to {{max}} rows)"
+    },
+    "done": {
+      "title": "Your report is ready",
+      "body_one": "{{rows}} row was written to a {{format}} file.",
+      "body_other": "{{rows}} rows were written to a {{format}} file."
+    },
+    "download": {
+      "button": "Download",
+      "done": "Report downloaded."
+    },
+    "errors": {
+      "rowCap": "This report has too many rows for {{format}}. The limit is {{max}} rows. Add conditions to narrow it down or choose another format.",
+      "expired": "This file was deleted after 7 days. Generate the report again to get a new one.",
+      "filterPart": "Condition {{n}}, {{part}}: {{problem}}",
+      "part": { "field": "field", "op": "operator", "value": "value" },
+      "hint": {
+        "AI_NOT_CONFIGURED": "Ask your organization administrator to set up an AI provider under Settings, AI setup.",
+        "AI_LIMIT_REACHED": "The monthly AI limit is used up. Ask your organization administrator to raise it, or try again next month."
+      }
+    },
+    "filterCodes": {
+      "unknown_field": "this field does not exist",
+      "unknown_source": "this kind of data does not exist",
+      "op_not_allowed": "this operator cannot be used with the field",
+      "wrong_type": "the value has the wrong type",
+      "value_not_allowed": "this value is not allowed",
+      "invalid_datetime": "this is not a valid date",
+      "not_sortable": "the report cannot be sorted by this field",
+      "not_groupable": "the report cannot be grouped by this field",
+      "pii_not_groupable": "personal data cannot be grouped",
+      "only_for_datetime": "month grouping only works on dates"
+    },
+    "history": {
+      "title": "Report history",
+      "orgWide": "Requests made by anyone in your organization, newest first.",
+      "platformWide": "Platform report requests, newest first.",
+      "when": "Requested",
+      "request": "Request",
+      "source": "Data",
+      "status": "Status",
+      "result": "Result",
+      "file": "File",
+      "rows_one": "{{rows}} row",
+      "rows_other": "{{rows}} rows",
+      "structured_one": "Structured filter ({{count}} condition)",
+      "structured_other": "Structured filter ({{count}} conditions)",
+      "expired": "File deleted",
+      "noFile": "No file",
+      "empty": {
+        "title": "No reports yet",
+        "body": "Reports you generate will be listed here."
+      }
+    },
+    "status": {
+      "interpreted": "Not confirmed",
+      "confirmed": "Confirmed",
+      "generated": "Generated",
+      "failed": "Failed"
+    },
+    "builder": {
+      "title": "Build a report",
+      "privacy": "Only organization-level figures and the platform audit log are available. Candidate content is never included.",
+      "source": "Data",
+      "conditions": "Conditions",
+      "noConditions": "No conditions: every record of this kind is included.",
+      "add": "Add a condition",
+      "remove": "Remove condition {{n}}",
+      "removeShort": "Remove",
+      "field": "Condition {{n}}: field",
+      "operator": "Condition {{n}}: operator",
+      "pickField": "Choose a field",
+      "value": "Value",
+      "from": "From",
+      "to": "To",
+      "incomplete": "Fill in or remove every condition first.",
+      "output": "Output",
+      "modeRows": "One row per record",
+      "modeCount": "Count of records grouped by a field",
+      "groupBy": "Group by",
+      "byMonth": "Dates are grouped by month.",
+      "sortBy": "Sort by",
+      "noSort": "Default order",
+      "direction": "Direction",
+      "asc": "Ascending",
+      "desc": "Descending",
+      "submit": "Continue"
+    },
+    "sources": {
+      "candidates": "Candidates",
+      "roles": "Roles",
+      "assessments": "Assessments",
+      "team": "Team members",
+      "audit": "Audit log",
+      "organizations": "Organizations",
+      "platform_audit": "Platform audit log"
+    },
+    "ops": {
+      "eq": "is",
+      "in": "is one of",
+      "contains": "contains",
+      "between": "is between",
+      "gte": "is at least",
+      "lte": "is at most"
+    },
+    "values": {
+      "yes": "Yes",
+      "no": "No",
+      "invite_status": { "invited": "Invited", "started": "Started", "submitted": "Submitted", "expired": "Expired", "revoked": "Revoked" },
+      "decision": { "waiting": "Waiting", "approved": "Approved", "rejected": "Rejected" },
+      "status": { "draft": "Draft", "open": "Open", "closed": "Closed", "active": "Active", "archived": "Archived", "inactive": "Inactive", "disabled": "Disabled" },
+      "role": { "org_admin": "Organization admin", "hr_user": "HR user" },
+      "result": { "success": "Success", "failure": "Failure", "denied": "Denied" }
+    },
+    "fields": {
+      "candidate_name": "Candidate name",
+      "candidate_email": "Candidate email",
+      "role_title": "Role",
+      "department": "Department",
+      "assessment_title": "Assessment",
+      "assessment_version": "Assessment version",
+      "invited_by_name": "Invited by",
+      "invite_status": "Invite status",
+      "invited_at": "Invited on",
+      "started_at": "Started on",
+      "submitted_at": "Submitted on",
+      "decided_at": "Decided on",
+      "score_percent": "Score (%)",
+      "passed": "Passed",
+      "decision": "Decision",
+      "decided_by_name": "Decided by",
+      "flag_counts_total": "Proctoring flags",
+      "title": "Title",
+      "experience_level": "Experience level",
+      "vacancies": "Vacancies",
+      "status": "Status",
+      "owner_name": "Owner",
+      "created_at": "Created on",
+      "closed_at": "Closed on",
+      "invites_total": "Invites",
+      "submitted_total": "Submitted",
+      "versions_total": "Versions",
+      "published_versions": "Published versions",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "last_login_at": "Last sign-in",
+      "action": "Action",
+      "entity_type": "Entity type",
+      "actor": "Actor",
+      "result": "Result",
+      "org_name": "Organization",
+      "active_users": "Active users",
+      "open_roles": "Open roles",
+      "count": "Count"
+    }
+  }
+}

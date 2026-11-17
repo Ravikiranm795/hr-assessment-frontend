@@ -25,11 +25,13 @@ export class SnapshotUploader {
   private timer: ReturnType<typeof setInterval> | null = null
   private sent = 0
   private lastAt = -Infinity
+  private readonly getVideo: () => HTMLVideoElement | null
+  private readonly intervalSeconds: number
 
-  constructor(
-    private readonly getVideo: () => HTMLVideoElement | null,
-    private readonly intervalSeconds: number,
-  ) {}
+  constructor(getVideo: () => HTMLVideoElement | null, intervalSeconds: number) {
+    this.getVideo = getVideo
+    this.intervalSeconds = intervalSeconds
+  }
 
   start() {
     const seconds = Math.max(this.intervalSeconds, MIN_SNAPSHOT_GAP_S + 1)

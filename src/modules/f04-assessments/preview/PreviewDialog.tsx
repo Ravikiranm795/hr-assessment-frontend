@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/Button'
 import { ErrorState } from '@/components/ErrorState'
+import { Modal } from '@/components/Modal'
 import { Spinner } from '@/components/Spinner'
 import { assessmentsApi, keys, latestVersion } from '../api'
-import { Dialog } from '../ui/Dialog'
 import { CandidatePreview } from './CandidatePreview'
 
 interface Props {
@@ -36,14 +35,7 @@ export function PreviewDialog({ open, onOpenChange, assessmentId, versionId }: P
 
   const error = detail.error ?? preview.error
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title={t('assessments.preview.title')}
-      description={t('assessments.preview.body')}
-      size="xl"
-      footer={<Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.close')}</Button>}
-    >
+    <Modal open={open} onOpenChange={onOpenChange} title={t('assessments.preview.title')} description={t('assessments.preview.body')} wide>
       {error ? (
         <ErrorState error={error} onRetry={() => void (detail.error ? detail.refetch() : preview.refetch())} />
       ) : preview.data ? (
@@ -51,6 +43,6 @@ export function PreviewDialog({ open, onOpenChange, assessmentId, versionId }: P
       ) : (
         <Spinner label={t('common.loading')} className="py-10" />
       )}
-    </Dialog>
+    </Modal>
   )
 }

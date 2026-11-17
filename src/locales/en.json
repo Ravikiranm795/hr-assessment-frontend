@@ -19,6 +19,14 @@
       "title": "Nothing here yet",
       "body": "There is nothing to show for now."
     },
+    "editor": {
+      "toolbar": "Text formatting",
+      "bold": "Bold",
+      "italic": "Italic",
+      "bulletList": "Bulleted list",
+      "orderedList": "Numbered list",
+      "codeBlock": "Code block"
+    },
     "pager": {
       "previous": "Previous",
       "next": "Next",

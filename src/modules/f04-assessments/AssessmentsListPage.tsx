@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
+import { Badge } from '@/components/Badge'
 import { Button } from '@/components/Button'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DataTable, type Column, type ListState } from '@/components/DataTable'
@@ -13,7 +14,6 @@ import { cn, formatDateTime } from '@/core/utils'
 import { assessmentsApi, canEditAssessment, keys, type AssessmentListItem, type ListParams } from './api'
 import { CreateAssessmentDialog } from './CreateAssessmentDialog'
 import { PreviewDialog } from './preview/PreviewDialog'
-import { Badge } from './ui/controls'
 import { Menu } from './ui/Menu'
 
 interface TeamUser {

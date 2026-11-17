@@ -1,0 +1,186 @@
+{
+  "exam": {
+    "loading": "Loading your exam…",
+    "layout": { "skip": "Skip to the main content" },
+    "errors": {
+      "INVITE_EXPIRED": "This exam link has expired. Please contact the recruiter to ask for a new one.",
+      "INVITE_REVOKED": "This exam link is no longer valid. Please contact the recruiter.",
+      "LINK_BOUND_TO_OTHER_SESSION": "This link was already opened in another browser. Please use that browser, or ask the recruiter to reset your link.",
+      "DEVICE_NOT_SUPPORTED": "This exam must be taken on a laptop or desktop computer with a wide enough window.",
+      "CONSENT_REQUIRED": "Please agree to the consent statement before you continue.",
+      "CAMERA_REQUIRED": "The camera is needed for this exam. Please allow camera access and take your photo.",
+      "HELP_REQUEST_PENDING": "Your help request is waiting for a decision. You can continue once it is answered.",
+      "EXAM_NOT_STARTED": "The exam has not started yet.",
+      "EXAM_ALREADY_SUBMITTED": "This exam has already been submitted.",
+      "EXAM_TIME_OVER": "The time for this exam is over.",
+      "RATE_LIMITED": "Too many requests. Please wait {{seconds}} seconds and try again.",
+      "NOT_FOUND": "We could not find this exam link. Please check the address or contact the recruiter.",
+      "ORG_DISABLED": "This exam is not available right now. Please contact the recruiter.",
+      "ROLE_NOT_OPEN": "This exam is not open right now. Please contact the recruiter.",
+      "ROLE_HAS_NO_ASSESSMENT": "This exam is not ready yet. Please contact the recruiter."
+    },
+    "error": {
+      "title": "We cannot open this exam",
+      "reference": "Reference:"
+    },
+    "thanks": {
+      "title": "Thank you, your exam has been submitted",
+      "body": "Your answers were received. The hiring team will review them and be in touch.",
+      "close": "You can close this window now."
+    },
+    "device": {
+      "title": "Please use a laptop or desktop",
+      "body": "This exam cannot be taken on a phone, a tablet or a small window. Open the link on a laptop or desktop computer."
+    },
+    "resume": {
+      "title": "Your exam is still running",
+      "body": "The page was reloaded. Your saved answers are safe and the timer kept running. Continue to return to fullscreen and to your questions.",
+      "continue": "Continue the exam"
+    },
+    "instructions": {
+      "title": "Before you begin",
+      "summary_one": "You have {{minutes}} minutes to answer {{count}} question.",
+      "summary_other": "You have {{minutes}} minutes to answer {{count}} questions.",
+      "accommodations": "Adjustments for you",
+      "badge": {
+        "cameraExempt": "Camera not required",
+        "timeMultiplier": "Time multiplied by {{multiplier}}",
+        "extraMinutes": "{{minutes}} extra minutes"
+      },
+      "rules": "Rules",
+      "rule": {
+        "alone": "Take the exam alone, in a quiet place.",
+        "noHelp": "Do not use notes, other people, other devices or other websites.",
+        "noLeave": "Stay on this page. Do not switch tabs or windows.",
+        "fullscreen": "The exam runs in fullscreen. If you leave fullscreen, you will be asked to return.",
+        "timer": "The timer runs on our server and cannot be paused, even if your connection drops.",
+        "autosave": "Your answers are saved automatically as you type."
+      },
+      "monitored": "What is monitored",
+      "monitor": {
+        "screen": "Your activity on this page while the exam runs.",
+        "tabs": "Whether you leave this page or the fullscreen view.",
+        "camera": "Your camera, with photos taken during the exam.",
+        "keys": "Copy, paste, right-click and developer tool shortcuts are turned off."
+      },
+      "cameraNotice": "Your camera stays on and is monitored for the whole exam, even when you hide the camera preview. Hiding the preview only hides the picture on your screen.",
+      "continue": "Continue"
+    },
+    "consent": {
+      "title": "Consent",
+      "document": "Consent statement",
+      "noDocument": "By continuing you agree that your answers and activity during this exam are recorded for the hiring team.",
+      "cameraNotice": "The camera stays on and is monitored during the whole exam, even if you hide the preview.",
+      "agree": "I have read the statement above and I agree.",
+      "back": "Back",
+      "continue": "I agree and continue"
+    },
+    "check": {
+      "title": "System check",
+      "intro": "A few quick checks before the timer starts. The timer only starts when you press Start the exam.",
+      "done": "Done",
+      "todo": "To do",
+      "screen": {
+        "title": "Screen size",
+        "ok": "Your window is wide enough.",
+        "small": "Your window is narrower than {{width}} pixels. Make it wider or use a larger screen."
+      },
+      "camera": {
+        "title": "Camera",
+        "body": "Allow camera access when your browser asks. Sit in good light and look at the camera.",
+        "denied": "Camera access was blocked. Allow the camera in your browser settings for this site, then try again.",
+        "unavailable": "No working camera was found. Connect one and try again, or ask for help below.",
+        "preview": "Your camera",
+        "turnOn": "Turn on the camera"
+      },
+      "photo": {
+        "title": "Your photo",
+        "body": "Take a clear photo of your face. Only you should be in the picture.",
+        "noFrame": "The camera has not produced a picture yet. Wait a moment and try again.",
+        "retake": "Take the photo again",
+        "take": "Take photo"
+      },
+      "face": {
+        "one": "One face is visible.",
+        "none": "No face is visible. Look at the camera.",
+        "many": "More than one face is visible. Only you should be in the picture."
+      },
+      "fullscreen": {
+        "title": "Fullscreen",
+        "body": "The exam runs in fullscreen. Try it now; it will close again.",
+        "unsupported": "Fullscreen is not available in this browser. You can continue.",
+        "test": "Test fullscreen"
+      },
+      "helpPending": "Your help request is waiting for a decision. You can start once it is answered.",
+      "start": "Start the exam"
+    },
+    "help": {
+      "waiting": "Your help request was sent. Please wait here; the recruiter will answer it.",
+      "approved": "Your request was approved. You can continue.",
+      "declined": "Your request was not approved. You can still continue with the exam as it is.",
+      "open": "Having trouble? Request help",
+      "title": "Request help",
+      "description": "Tell us what is wrong. The recruiter decides inside the platform.",
+      "reason": "What is the problem?",
+      "reasons": {
+        "no_camera": "I do not have a camera",
+        "camera_not_working": "My camera is not working",
+        "extra_time": "I need extra time",
+        "other": "Something else"
+      },
+      "note": "Note (optional)",
+      "cancel": "Cancel",
+      "send": "Send request"
+    },
+    "question": {
+      "heading": "Question {{number}} of {{total}}",
+      "marks_one": "{{count}} mark",
+      "marks_other": "{{count}} marks",
+      "chooseOne": "Choose one answer",
+      "chooseMany": "Choose all answers that apply",
+      "blank": "Blank {{number}}",
+      "gap": "Gap {{number}}",
+      "yourAnswer": "Your answer",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "palette": {
+      "label": "Questions",
+      "answered": "Question {{number}}, answered",
+      "unanswered": "Question {{number}}, not answered",
+      "legendCurrent": "Current",
+      "legendAnswered": "Answered",
+      "legendUnanswered": "Not answered"
+    },
+    "timer": {
+      "label": "Time left",
+      "announce": "{{minutes}} minutes left."
+    },
+    "camera": {
+      "show": "Show my camera",
+      "hide": "Hide my camera",
+      "preview": "Your camera preview",
+      "lost": "Your camera stopped working. Please reconnect it. The exam keeps running.",
+      "reconnect": "Reconnect the camera"
+    },
+    "offline": "You are offline. Your answers are kept on this device and will be sent when the connection returns. The timer keeps running.",
+    "status": {
+      "saving": "Saving your answers…",
+      "saved": "All answers saved."
+    },
+    "fullscreen": {
+      "title": "Return to fullscreen",
+      "body": "The exam runs in fullscreen. Return to fullscreen to carry on. Your timer is still running.",
+      "return": "Return to fullscreen"
+    },
+    "lockdown": { "note": "That action is turned off during the exam." },
+    "submit": {
+      "button": "Submit the exam",
+      "confirmTitle": "Submit your exam?",
+      "confirmBody": "You answered {{answered}} of {{total}} questions. After you submit you cannot change your answers.",
+      "confirm": "Submit",
+      "saveFailed": "We could not save your latest answers yet. Check your connection and press Submit again.",
+      "failed": "We could not submit yet. Check your connection and press Submit again. Your answers are safe."
+    }
+  }
+}

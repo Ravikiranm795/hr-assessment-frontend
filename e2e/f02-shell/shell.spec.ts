@@ -48,10 +48,10 @@ test('Settings opens the submenu rail and the hamburger returns to the main page
   await expect(mainNav(page).getByRole('link', { name: 'Settings' })).toContainText('Settings')
 })
 
-test('super admin lands on organizations with the platform menu', async ({ page }) => {
+test('super admin lands on the platform dashboard with the platform menu', async ({ page }) => {
   await signIn(page, 'superadmin.daily@platform.demo.example.com')
-  await expect(page).toHaveURL(/\/platform\/orgs$/)
-  for (const name of ['Organizations', 'Feature flags', 'Platform branding', 'Platform audit', 'Usage', 'Platform reports']) {
+  await expect(page).toHaveURL(/\/platform\/dashboard$/)
+  for (const name of ['Dashboard', 'Organizations', 'Feature flags', 'Platform branding', 'Platform audit', 'Usage', 'Platform reports']) {
     await expect(mainNav(page).getByRole('link', { name })).toBeVisible()
   }
   await expect(mainNav(page).getByRole('link', { name: 'Assessments' })).toHaveCount(0)

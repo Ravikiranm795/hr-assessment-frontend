@@ -10,4 +10,7 @@
 - 2026-11-17 Promoted Modal, Textarea, Badge, Html to src/components (F7 + F10 share them)
 - 2026-11-17 F10 Team done (main thread): list/search/filter, add HR user + one-time password, deactivate with reassign, reactivate, reset password, unlock, sign out everywhere; admin rows read-only; e2e/f10-team 4/4 green
 - 2026-11-17 Dispatched agents F6 exam, F4 assessments, F5 roles + F13 inbox; all three stopped by the 5-hour usage limit with partial, un-gated work (see CHECKPOINT)
+- 2026-11-17 Agents finished: F4 (8 tests), F5+F13 (10), F6 (7), F8 (5), F12 (10). Main thread: F9 audit (5), F11 settings incl. Documents (6), F3 dashboard + gadget editor (4)
+- 2026-11-17 Fixed dashboard crash (gadgets called as functions); DeviceGate/AuthProvider no longer interfere with /exam/*; shared RichTextEditor added
+- 2026-11-17 Full suite: 74/75 first run, exam golden flow timing flake passes on re-run; handover doc written (docs/HANDOVER.md)
 - 2026-11-17 Module plug-in contract: per-module routes.tsx and locales/en.json auto-collected (enables parallel agents)

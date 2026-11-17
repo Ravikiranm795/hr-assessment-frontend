@@ -1,7 +1,7 @@
 import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 import { RequireAuth } from '@/core/auth/guards'
 import { AppShell } from '@/modules/f02-shell/AppShell'
-import { Home, NotFound } from './pages'
+import { NotFound } from './pages'
 
 // Modules plug in by exporting from `src/modules/<module>/routes.tsx`; nothing here changes per module:
 //   publicRoutes  - outside sign-in and outside the shell (/login, /exam/:token)
@@ -23,7 +23,7 @@ export const router = createBrowserRouter([
       ...collect('accountRoutes'),
       {
         element: <AppShell />,
-        children: [{ path: '/', element: <Home /> }, ...collect('shellRoutes'), { path: '*', element: <NotFound /> }],
+        children: [...collect('shellRoutes'), { path: '*', element: <NotFound /> }],
       },
     ],
   },

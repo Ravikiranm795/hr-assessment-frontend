@@ -69,7 +69,7 @@ export function HelpRequestPanel({ requests }: { requests: HelpRequest[] }) {
                 {r.candidate_name} · {t(`roles.help.reason.${r.reason}`, { defaultValue: r.reason })}
               </p>
               {r.note && <p className="mt-1 text-muted">{r.note}</p>}
-              <p className="mt-1 text-xs text-muted">{formatDateTime(r.created_at, me?.organization.timezone)}</p>
+              <p className="mt-1 text-xs text-muted">{formatDateTime(r.created_at, me?.organization?.timezone)}</p>
             </div>
             <div className="flex gap-2">
               <Button size="sm" onClick={() => open(r, 'approve')}>

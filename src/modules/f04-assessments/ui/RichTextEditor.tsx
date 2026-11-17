@@ -57,7 +57,8 @@ export function RichTextEditor({
   })
 
   useEffect(() => {
-    editor?.setEditable(!disabled)
+    // `false`: toggling editability must not emit an update (it would mark the draft as edited).
+    editor?.setEditable(!disabled, false)
   }, [editor, disabled])
 
   const active = useEditorState({

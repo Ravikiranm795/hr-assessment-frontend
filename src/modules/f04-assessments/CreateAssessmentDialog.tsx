@@ -7,11 +7,11 @@ import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { Button } from '@/components/Button'
 import { Field } from '@/components/Field'
+import { Modal } from '@/components/Modal'
+import { Textarea } from '@/components/Textarea'
 import { errorText } from '@/core/api/errors'
 import { applyFieldErrors } from '@/core/forms'
 import { assessmentsApi, keys } from './api'
-import { TextareaField } from './ui/controls'
-import { Dialog } from './ui/Dialog'
 
 const schema = z.object({ title: z.string().trim().min(1), description: z.string().trim() })
 type Values = z.infer<typeof schema>
@@ -52,7 +52,7 @@ export function CreateAssessmentDialog({ open, onOpenChange }: Props) {
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
       onOpenChange={onOpenChange}
       title={t('assessments.create.title')}
@@ -70,7 +70,7 @@ export function CreateAssessmentDialog({ open, onOpenChange }: Props) {
           error={errors.title && (errors.title.message && errors.title.type === 'server' ? errors.title.message : t('fieldErrors.required'))}
           {...register('title')}
         />
-        <TextareaField label={t('assessments.field.description')} error={errors.description?.message} {...register('description')} />
+        <Textarea label={t('assessments.field.description')} error={errors.description?.message} {...register('description')} />
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
@@ -80,6 +80,6 @@ export function CreateAssessmentDialog({ open, onOpenChange }: Props) {
           </Button>
         </div>
       </form>
-    </Dialog>
+    </Modal>
   )
 }

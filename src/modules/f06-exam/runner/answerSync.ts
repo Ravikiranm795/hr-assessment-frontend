@@ -44,11 +44,13 @@ export class AnswerSync {
   private version = 0
   private disposed = false
   private halted = false
+  private readonly storeKey: string
+  private readonly handlers: AnswerSyncHandlers
 
-  constructor(
-    private readonly storeKey: string,
-    private readonly handlers: AnswerSyncHandlers,
-  ) {}
+  constructor(storeKey: string, handlers: AnswerSyncHandlers) {
+    this.storeKey = storeKey
+    this.handlers = handlers
+  }
 
   /** Answers saved in this browser but never confirmed (a previous page load); they are newer than the server's. */
   async restore(): Promise<Record<string, AnswerValue>> {

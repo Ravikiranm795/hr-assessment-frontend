@@ -1,0 +1,274 @@
+{
+  "platform": {
+    "orgStatus": {
+      "active": "Active",
+      "disabled": "Disabled"
+    },
+    "role": {
+      "org_admin": "Organization admin",
+      "hr_user": "HR user",
+      "super_admin": "Platform admin"
+    },
+    "userStatus": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "locked": "Locked"
+    },
+    "roleStatus": {
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "tempPassword": {
+      "title": "Temporary password",
+      "body": "Share this password with {{name}} now. It is shown only once and they must change it at first sign-in.",
+      "copy": "Copy password",
+      "copied": "Password copied.",
+      "done": "I have shared it"
+    },
+    "orgs": {
+      "title": "Organizations",
+      "subtitle": "Every organization on the platform. Open one to manage its people, features and flags.",
+      "add": "Create organization",
+      "search": "Search by name or slug",
+      "demo": "Demo",
+      "filter": {
+        "status": "Status",
+        "all": "All statuses"
+      },
+      "columns": {
+        "name": "Organization",
+        "status": "Status",
+        "created": "Created"
+      },
+      "empty": {
+        "title": "No organizations found",
+        "body": "Try a different search or filter, or create the first organization."
+      },
+      "create": {
+        "title": "Create an organization",
+        "body": "This also creates its first organization admin with a one-time temporary password.",
+        "name": "Organization name",
+        "slug": "Short name (slug)",
+        "slugHint": "Optional. Built from the name when left empty.",
+        "adminName": "Admin full name",
+        "adminEmail": "Admin work email",
+        "demo": "This is a demo organization",
+        "submit": "Create organization"
+      }
+    },
+    "org": {
+      "breadcrumb": "Breadcrumb",
+      "tabs": "Organization sections",
+      "tab": {
+        "overview": "Overview",
+        "users": "Users",
+        "roles": "Roles",
+        "admins": "Admins",
+        "flags": "Feature flags",
+        "misuse": "Misuse flags"
+      },
+      "enable": "Enable organization",
+      "disable": "Disable organization",
+      "enableTitle": "Enable {{name}}?",
+      "disableTitle": "Disable {{name}}?",
+      "enableBody": "People can sign in again and new exams can start.",
+      "disableBody": "No new sign-ins or exam starts. Exams already in progress can finish. Nothing is deleted.",
+      "reason": "Reason (optional, kept in the audit log)",
+      "enabledToast": "Organization enabled.",
+      "disabledToast": "Organization disabled."
+    },
+    "overview": {
+      "people": "People",
+      "users": "Users",
+      "usersHint": "{{active}} active, {{inactive}} inactive",
+      "admins": "Organization admins",
+      "hr": "HR users",
+      "activity": "Hiring activity",
+      "openRoles": "Open roles",
+      "rolesHint": "{{total}} roles in total",
+      "invites": "Invites",
+      "invitesHint": "{{invited}} waiting, {{submitted}} submitted",
+      "attempts": "Attempts",
+      "attemptsHint": "{{submitted}} submitted",
+      "ai": "AI usage",
+      "aiCalls": "AI calls this month",
+      "created": "Created {{date}}. Candidate answers and snapshots are never shown to the platform team."
+    },
+    "users": {
+      "columns": {
+        "name": "Name",
+        "role": "Role",
+        "status": "Status",
+        "lastLogin": "Last sign-in"
+      },
+      "never": "Never",
+      "empty": "This organization has no users."
+    },
+    "roles": {
+      "columns": {
+        "title": "Role",
+        "status": "Status",
+        "owner": "Owner",
+        "created": "Created"
+      },
+      "ownerInactive": "Owner inactive",
+      "empty": "This organization has no roles."
+    },
+    "admins": {
+      "hint": "Only the platform team can create or change organization admins.",
+      "add": "Add organization admin",
+      "empty": "This organization has no admins.",
+      "menu": "Actions for {{name}}",
+      "resetPassword": "Reset password",
+      "unlock": "Unlock account",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "toast": {
+        "deactivated": "Admin deactivated.",
+        "reactivated": "Admin reactivated.",
+        "unlocked": "Account unlocked."
+      },
+      "confirm": {
+        "resetTitle": "Reset the password for {{name}}?",
+        "resetBody": "A new temporary password replaces the current one and all their sessions end.",
+        "reactivateTitle": "Reactivate {{name}}?",
+        "reactivateBody": "They can sign in again with their current password.",
+        "deactivateTitle": "Deactivate {{name}}?",
+        "deactivateBody": "They can no longer sign in. Their data is kept.",
+        "lastTitle": "Deactivate the last active admin?",
+        "lastBody": "{{name}} is the last active admin of this organization. Without an admin nobody there can manage the team until you add or reactivate one.",
+        "lastConfirm": "Deactivate anyway"
+      },
+      "addDialog": {
+        "title": "Add an organization admin",
+        "body": "They get a one-time temporary password and must choose a new one at first sign-in.",
+        "name": "Full name",
+        "email": "Work email",
+        "submit": "Create admin"
+      }
+    },
+    "flags": {
+      "orgBody": "Turn a feature off to hide it and block its API for this organization. Data is kept.",
+      "defaultsTitle": "Default feature flags",
+      "defaultsBody": "The starting set copied into every new organization. Organizations that already exist keep their current values.",
+      "hiddenFromOrg": "Never shown to the organization",
+      "dependsOn": "Needs: {{list}}",
+      "blocked": "Off because a required feature is off",
+      "unsaved": "Unsaved",
+      "reason": "Reason (optional, kept in the audit log)",
+      "discard": "Discard changes",
+      "save": "Save changes ({{count}})",
+      "saved": "Feature flags saved.",
+      "defaultsSaved": "Defaults saved. New organizations will use them.",
+      "keys": {
+        "dashboard": { "label": "Dashboard", "hint": "Home dashboard with its gadgets." },
+        "dashboard_gadgets": { "label": "Dashboard gadgets", "hint": "Let people arrange their own dashboard gadgets." },
+        "assessments": { "label": "Assessments", "hint": "Assessments tab and the assessment builder." },
+        "ai_question_builder": { "label": "AI question builder", "hint": "AI question suggestions in the builder." },
+        "ai_scoring": { "label": "AI scoring", "hint": "AI scoring of short answers and code gaps." },
+        "question_bank": { "label": "Question bank", "hint": "Shared bank of reusable questions." },
+        "roles": { "label": "Roles", "hint": "Open roles that candidates are invited to." },
+        "invites": { "label": "Invites", "hint": "Invite candidates to an exam." },
+        "csv_bulk_invite": { "label": "CSV bulk invite", "hint": "Invite many candidates from a CSV file." },
+        "email_sending": { "label": "Email sending", "hint": "Send invites and notices by email." },
+        "help_requests": { "label": "Help requests", "hint": "Candidates can ask for help during an exam." },
+        "camera_proctoring": { "label": "Camera proctoring", "hint": "Camera checks and snapshots during exams." },
+        "review": { "label": "Review", "hint": "Review attempts and record decisions." },
+        "reports_chat": { "label": "Reports chat", "hint": "Ask for reports in plain language." },
+        "audit_view": { "label": "Audit view", "hint": "The audit screen." },
+        "audit_export": { "label": "Audit export", "hint": "Export the audit log." },
+        "team": { "label": "Team", "hint": "Team page for organization admins." },
+        "settings": { "label": "Settings", "hint": "Organization settings screens." },
+        "org_branding": { "label": "Organization branding", "hint": "Custom colors, font and logo." },
+        "policy_documents": { "label": "Policy documents", "hint": "Policy documents shown to candidates." },
+        "ai_provider_setup": { "label": "AI provider setup", "hint": "Settings section for connecting an AI provider." },
+        "watermark": { "label": "Platform watermark", "hint": "Marks exports and screens with the platform name. Organizations never see this flag." }
+      }
+    },
+    "misuse": {
+      "columns": {
+        "raised": "Raised",
+        "comment": "Comment",
+        "status": "Status"
+      },
+      "status": {
+        "open": "Open",
+        "cleared": "Cleared"
+      },
+      "closingNote": "Closing note: {{note}}",
+      "clear": "Clear",
+      "filter": {
+        "label": "Filter by status",
+        "all": "All flags"
+      },
+      "raise": "Raise misuse flag",
+      "raised": "Misuse flag raised. The organization admins were notified.",
+      "cleared": "Misuse flag cleared. The organization admins were notified.",
+      "empty": {
+        "title": "No misuse flags",
+        "body": "Raise a flag when this organization breaks the usage rules."
+      },
+      "raiseDialog": {
+        "title": "Raise a misuse flag for {{name}}",
+        "body": "The organization admins see your comment in a notification.",
+        "comment": "Comment (required)",
+        "submit": "Raise flag"
+      },
+      "clearDialog": {
+        "title": "Clear misuse flag",
+        "body": "Flag comment: {{comment}}",
+        "note": "Closing note (required)",
+        "submit": "Clear flag"
+      }
+    },
+    "branding": {
+      "title": "Platform branding",
+      "subtitle": "The theme for platform admin screens and the sign-in page. Organization themes are not affected.",
+      "saved": "Platform theme saved.",
+      "primary": "Primary color",
+      "accent": "Accent color",
+      "background": "Background style",
+      "font": "Font",
+      "picker": "Pick {{label}}",
+      "bg": {
+        "mint": "Mint",
+        "plain_white": "Plain white",
+        "soft_gray": "Soft gray",
+        "navy_band": "Navy band"
+      },
+      "fonts": {
+        "inter": "Inter",
+        "source_sans_3": "Source Sans 3",
+        "nunito_sans": "Nunito Sans",
+        "ibm_plex_sans": "IBM Plex Sans",
+        "lato": "Lato",
+        "merriweather": "Merriweather"
+      },
+      "preview": "Preview",
+      "previewButton": "Primary button",
+      "previewAccent": "Accent button",
+      "save": "Save theme",
+      "reset": "Reset to starter theme",
+      "resetTitle": "Reset the platform theme?",
+      "resetBody": "The platform theme goes back to the starter colors, font and background.",
+      "resetDone": "Platform theme reset.",
+      "contrastPass": "Contrast {{ratio}}:1",
+      "contrastFail": "Contrast {{ratio}}:1, needs {{min}}:1"
+    },
+    "usage": {
+      "title": "AI usage",
+      "subtitle": "AI calls and tokens per organization. Counts only, never content.",
+      "month": "Month",
+      "columns": {
+        "org": "Organization",
+        "calls": "Calls",
+        "tokensIn": "Tokens in",
+        "tokensOut": "Tokens out",
+        "features": "By feature"
+      },
+      "none": "No usage",
+      "empty": "No usage recorded for this month.",
+      "feature": {}
+    }
+  }
+}

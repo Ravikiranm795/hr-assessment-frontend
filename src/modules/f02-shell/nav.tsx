@@ -58,6 +58,7 @@ export const NAV: NavItem[] = [
       { label: 'settingsMenu.dashboard', to: '/settings/dashboard', roles: STAFF, flag: 'dashboard_gadgets' },
     ],
   },
+  { label: 'nav.dashboard', to: '/platform/dashboard', icon: LayoutDashboard, roles: ['super_admin'] },
   { label: 'nav.organizations', to: '/platform/orgs', icon: Building2, roles: ['super_admin'] },
   { label: 'nav.featureFlags', to: '/platform/flags/defaults', icon: Flag, roles: ['super_admin'] },
   { label: 'nav.platformBranding', to: '/platform/branding', icon: Palette, roles: ['super_admin'] },
@@ -101,5 +102,5 @@ export function activeSection(items: ResolvedItem[], pathname: string) {
 
 /** The page a role lands on (main page). */
 export function homeFor(role: Role | null) {
-  return role === 'super_admin' ? '/platform/orgs' : '/'
+  return role === 'super_admin' ? '/platform/dashboard' : '/'
 }

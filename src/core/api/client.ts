@@ -109,7 +109,8 @@ export function refreshSession(): Promise<string | null> {
   return refreshing
 }
 
-export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+/** Send with the current token; on 401 do one single-flight refresh and retry. Throws `ApiError` on failure. */
+async function execute(path: string, opts: RequestOptions): Promise<Response> {
   const token = opts.token !== undefined ? opts.token : accessToken
   let res = await send(path, opts, token)
 
@@ -124,8 +125,32 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
   }
 
   if (!res.ok) throw await parseError(res)
+  return res
+}
+
+export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const res = await execute(path, opts)
   if (res.status === 204) return undefined as T
   return (await res.json()) as T
+}
+
+/** File responses (CSV / PDF exports). The filename comes from Content-Disposition when present. */
+export async function requestFile(path: string, opts: RequestOptions = {}): Promise<{ blob: Blob; filename: string | null }> {
+  const res = await execute(path, opts)
+  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(res.headers.get('Content-Disposition') ?? '')
+  return { blob: await res.blob(), filename: match ? decodeURIComponent(match[1]) : null }
+}
+
+/** Save a blob through a temporary link (the file never touches storage APIs). */
+export function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }
 
 export const api = {

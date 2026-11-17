@@ -19,7 +19,8 @@ export function DeviceGate({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  if (!unsupported) return <>{children}</>
+  // The candidate exam has its own device check; unmounting it on a resize would drop the camera and fullscreen.
+  if (!unsupported || window.location.pathname.startsWith('/exam/')) return <>{children}</>
   return (
     <main className="flex min-h-screen items-center justify-center p-8 text-center" role="alert">
       <div className="max-w-sm">

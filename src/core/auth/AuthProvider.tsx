@@ -37,6 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Quiet restore on page load: the HttpOnly refresh cookie gives a new access token (spec F-05).
   useEffect(() => {
     setSessionLostHandler(clear)
+    // Candidates on the public exam page have no staff session: skip the restore call.
+    if (window.location.pathname.startsWith('/exam/')) {
+      setStatus('anonymous')
+      return () => setSessionLostHandler(null)
+    }
     let cancelled = false
     void (async () => {
       const token = await refreshSession()
