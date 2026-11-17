@@ -1,0 +1,84 @@
+{
+  "team": {
+    "title": "Team",
+    "subtitle": "People in your organization and what they can access.",
+    "search": "Search by name or email",
+    "filter": {
+      "status": "Status",
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "add": "Add HR user",
+    "columns": {
+      "name": "Name",
+      "role": "Role",
+      "status": "Status",
+      "lastLogin": "Last sign-in",
+      "actions": "Actions"
+    },
+    "role": {
+      "org_admin": "Organization admin",
+      "hr_user": "HR user",
+      "super_admin": "Platform admin"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "locked": "Locked"
+    },
+    "neverSignedIn": "Never",
+    "readOnly": "Read only",
+    "readOnlyHint": "Administrator accounts can only be changed by the platform team.",
+    "empty": {
+      "title": "No people found",
+      "body": "Try a different search or filter, or add your first HR user."
+    },
+    "actions": {
+      "menu": "Actions for {{name}}",
+      "resetPassword": "Reset password",
+      "unlock": "Unlock account",
+      "signOutEverywhere": "Sign out everywhere",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate"
+    },
+    "add_dialog": {
+      "title": "Add an HR user",
+      "body": "They get a one-time temporary password and must choose a new one at first sign-in.",
+      "name": "Full name",
+      "email": "Work email",
+      "submit": "Create user"
+    },
+    "tempPassword": {
+      "title": "Temporary password",
+      "body": "Share this password with {{name}} now. It is shown only once and they must change it at first sign-in.",
+      "copy": "Copy password",
+      "copied": "Password copied.",
+      "done": "I have shared it"
+    },
+    "deactivate_dialog": {
+      "title": "Deactivate {{name}}?",
+      "body": "They can no longer sign in. Their data is kept and nothing is deleted. You can reactivate them later.",
+      "reassign": "Move their open roles to",
+      "reassignNone": "Keep roles with them",
+      "reason": "Reason (optional)",
+      "submit": "Deactivate"
+    },
+    "confirm": {
+      "resetTitle": "Reset the password for {{name}}?",
+      "resetBody": "A new temporary password replaces the current one and they are signed out.",
+      "signOutTitle": "Sign {{name}} out everywhere?",
+      "signOutBody": "All their active sessions end immediately.",
+      "reactivateTitle": "Reactivate {{name}}?",
+      "reactivateBody": "They can sign in again with their current password."
+    },
+    "toast": {
+      "created": "User created.",
+      "reset": "Password reset.",
+      "unlocked": "Account unlocked.",
+      "signedOut": "Signed out everywhere.",
+      "deactivated": "User deactivated.",
+      "reactivated": "User reactivated."
+    }
+  }
+}

@@ -1,0 +1,245 @@
+{
+  "app": {
+    "name": "HR Assessment Platform",
+    "poweredBy": "Powered by MRK Innovations"
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "actions": "Actions",
+    "requestId": "Reference: {{id}}",
+    "empty": {
+      "title": "Nothing here yet",
+      "body": "There is nothing to show for now."
+    },
+    "pager": {
+      "previous": "Previous",
+      "next": "Next",
+      "summary": "Page {{page}} of {{pages}} ({{total}} total)"
+    }
+  },
+  "device": {
+    "unsupported": {
+      "title": "Please use a laptop or desktop",
+      "body": "This platform needs a screen at least 900 pixels wide. Open this page on a laptop or desktop computer to continue."
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you are looking for does not exist or you do not have access to it.",
+    "home": "Go to the start page"
+  },
+  "featureDisabled": {
+    "title": "Not available for your organization",
+    "body": "This feature is turned off for your organization. Contact your administrator if you need it."
+  },
+  "session": {
+    "restoring": "Restoring your session…",
+    "idle": {
+      "title": "Are you still there?",
+      "body": "You will be signed out soon because of inactivity.",
+      "stay": "Stay signed in",
+      "signOut": "Sign out"
+    }
+  },
+  "nav": {
+    "main": "Main menu",
+    "submenu": "Section menu",
+    "expand": "Open main menu",
+    "dashboard": "Dashboard",
+    "assessments": "Assessments",
+    "roles": "Open roles",
+    "helpRequests": "Help requests",
+    "reports": "Reports",
+    "audit": "Audit",
+    "team": "Team",
+    "settings": "Settings",
+    "organizations": "Organizations",
+    "featureFlags": "Feature flags",
+    "platformBranding": "Platform branding",
+    "platformAudit": "Platform audit",
+    "usage": "Usage",
+    "platformReports": "Platform reports"
+  },
+  "settingsMenu": {
+    "profile": "Profile",
+    "security": "Security",
+    "retention": "Retention",
+    "invites": "Invites",
+    "email": "Email",
+    "ai": "AI setup",
+    "branding": "Branding",
+    "documents": "Documents",
+    "dashboard": "Dashboard gadgets"
+  },
+  "topbar": {
+    "notifications": "Notifications",
+    "profile": "Profile menu",
+    "signOut": "Sign out",
+    "signOutAll": "Sign out everywhere"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "You are all caught up.",
+    "markAll": "Mark all as read",
+    "unread": "{{count}} unread",
+    "type": {
+      "unknown": "New notification",
+      "attempt_submitted": "A candidate submitted their exam",
+      "invite_expiring": "An invite is about to expire",
+      "help_request_created": "A candidate asked for help",
+      "serious_flag": "A serious proctoring flag was recorded",
+      "scoring_needs_manual": "An answer needs manual scoring",
+      "misuse_flag_raised": "A misuse flag was raised for your organization",
+      "misuse_flag_cleared": "A misuse flag was cleared",
+      "account_locked": "An account was locked"
+    }
+  },
+  "login": {
+    "title": "Sign in",
+    "form": {
+      "email": { "label": "Email", "placeholder": "you@company.com" },
+      "password": { "label": "Password", "placeholder": "Your password" },
+      "submit": "Sign in"
+    },
+    "google": "Sign in with Google",
+    "or": "or",
+    "error": {
+      "generic": "The email or password is not correct.",
+      "locked": "This account is locked. Try again in 15 minutes or ask your administrator to unlock it.",
+      "google": "Google sign-in did not work. Use your email and password instead."
+    }
+  },
+  "totpLogin": {
+    "title": "Enter your code",
+    "body": "Open your authenticator app and enter the 6-digit code. You can also use a recovery code.",
+    "code": { "label": "Code", "placeholder": "123456" },
+    "submit": "Verify",
+    "backToLogin": "Back to sign in",
+    "expired": "This sign-in step has expired. Please sign in again."
+  },
+  "changePassword": {
+    "title": "Set a new password",
+    "body": "You need to choose a new password before you continue.",
+    "hint": "Use a long, unique password. Your organization may have extra rules; the form tells you if one is not met.",
+    "current": { "label": "Current password" },
+    "new": { "label": "New password" },
+    "confirm": { "label": "Repeat new password", "mismatch": "The two passwords do not match." },
+    "submit": "Save password"
+  },
+  "totpSetup": {
+    "title": "Set up your authenticator app",
+    "body": "Scan the code with an authenticator app, then enter the 6-digit code it shows.",
+    "qrAlt": "QR code for your authenticator app",
+    "manualKey": "Or enter this key by hand",
+    "code": { "label": "6-digit code", "placeholder": "123456" },
+    "verify": "Turn on",
+    "recovery": {
+      "title": "Save your recovery codes",
+      "body": "Each code works once if you lose your phone. They are shown only now, so store them somewhere safe.",
+      "copy": "Copy codes",
+      "copied": "Recovery codes copied.",
+      "saved": "I have saved these codes",
+      "continue": "Continue"
+    }
+  },
+  "errors": {
+    "unknown": "Something went wrong. Please try again.",
+    "network": "Cannot reach the server. Check your connection and try again.",
+    "common": {
+      "internal": "Something went wrong on our side. Please try again.",
+      "admin_only_action": "Only an organization administrator can do this.",
+      "conflict": "This conflicts with the current state. Refresh and try again.",
+      "feature_disabled": "This feature is not available for your organization.",
+      "forbidden": "You do not have permission to do this.",
+      "not_found": "We could not find what you asked for.",
+      "rate_limited": "Too many attempts. Please wait {{seconds}} seconds and try again.",
+      "unauthenticated": "Your session has ended. Please sign in again.",
+      "validation": "Some fields need your attention."
+    },
+    "ai": {
+      "limit_reached": "The monthly AI usage limit has been reached.",
+      "not_configured": "AI is not set up for your organization yet.",
+      "output_invalid": "The AI returned an answer we could not use. Please try again.",
+      "provider_error": "The AI provider reported a problem. Please try again later."
+    },
+    "assessment": {
+      "immutable": "A published version cannot be edited. Create a new version instead.",
+      "not_published": "Only a published assessment can be used here.",
+      "draft_already_exists": "A draft version already exists for this assessment.",
+      "version_limit_all_in_use": "All three versions are in use by open roles. Close or change a role before creating a new version."
+    },
+    "auth": {
+      "account_locked": "This account is locked for 15 minutes after too many failed sign-in attempts.",
+      "invalid_credentials": "The email or password is not correct.",
+      "must_change_password": "You must set a new password before continuing.",
+      "password_policy_failed": "The new password does not meet your organization's rules."
+    },
+    "branding": {
+      "contrast_too_low": "These colors do not give readable text. Choose colors with more contrast."
+    },
+    "email": {
+      "smtp_not_configured": "Email sending is not set up for your organization."
+    },
+    "exam": {
+      "camera_required": "The camera is required to continue.",
+      "consent_required": "You must agree to the consent statement first.",
+      "device_not_supported": "Please use a laptop or desktop computer for this exam.",
+      "already_submitted": "This exam has already been submitted.",
+      "not_started": "The exam has not started yet.",
+      "time_over": "The time for this exam is over.",
+      "help_request_pending": "Your help request is waiting for a decision.",
+      "link_bound_to_other_session": "This link was opened in another browser. Ask the recruiter to reset it."
+    },
+    "invite": {
+      "duplicate": "This candidate already has an invite for this role.",
+      "expired": "This invite link has expired.",
+      "revoked": "This invite link is no longer valid."
+    },
+    "org": {
+      "disabled": "This organization is disabled."
+    },
+    "question": {
+      "model_answer_required": "Add a model answer or key points for questions scored by AI.",
+      "invalid": "This question is not valid."
+    },
+    "report": {
+      "filter_invalid": "The report filter is not valid."
+    },
+    "review": {
+      "decision_already_made": "A decision has already been made for this candidate."
+    },
+    "role": {
+      "has_invites": "This role has invites and cannot be removed.",
+      "has_no_assessment": "Link an assessment to this role first.",
+      "not_open": "Open the role before inviting candidates."
+    },
+    "team": {
+      "last_admin_protected": "The last organization administrator cannot be changed.",
+      "protected_account": "This account is protected."
+    },
+    "upload": {
+      "invalid": "This file cannot be uploaded."
+    }
+  },
+  "fieldErrors": {
+    "required": "This field is required.",
+    "too_short": "This is too short.",
+    "too_long": "This is too long.",
+    "too_small": "This number is too small.",
+    "too_large": "This number is too large.",
+    "invalid_format": "This is not in the expected format.",
+    "invalid_choice": "Choose one of the allowed options.",
+    "invalid_type": "This value has the wrong type.",
+    "invalid_json": "The request could not be read.",
+    "unknown_field": "This field is not allowed.",
+    "invalid": "This value is not valid."
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "review": {
+    "title": "Candidate review",
+    "accessNote": "Access to this page is recorded.",
+    "back": "Back",
+    "erased": "Candidate data erased",
+    "status": {
+      "in_progress": "In progress",
+      "submitted": "Submitted",
+      "ready": "Not started",
+      "expired": "Expired"
+    },
+    "badge": {
+      "cameraExempt": "Camera exempt",
+      "extraTime": "Extra time granted",
+      "autoSubmitted": "Auto-submitted by timer",
+      "helpApproved": "Help request approved"
+    },
+    "score": {
+      "title": "Score",
+      "percent": "{{value}}%",
+      "pass": "Passed",
+      "fail": "Not passed",
+      "passMark": "Pass mark {{value}}%",
+      "marks": "{{got}} of {{total}} marks",
+      "timeTaken": "Time taken",
+      "minutes": "{{count}} min",
+      "notScored": "Not scored yet",
+      "pending": "Scoring pending",
+      "pendingBody": "AI scoring runs in the background about every 5 minutes. Refresh to see updates.",
+      "needsManual": "Needs manual scoring",
+      "needsManualBody": "AI scoring is unavailable for some answers. Score them by hand in the Answers tab."
+    },
+    "decision": {
+      "title": "Decision",
+      "waiting": "Waiting for a decision",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "note": "Note (optional)",
+      "approve": "Approve",
+      "reject": "Reject",
+      "by": "Decided {{when}}",
+      "confirmTitle": "Confirm your decision",
+      "confirmApprove": "Approve this candidate? A decision cannot be made twice.",
+      "confirmReject": "Reject this candidate? A decision cannot be made twice.",
+      "override": "Override decision",
+      "overrideTitle": "Override the decision",
+      "overrideReason": "Reason (required)",
+      "overrideTo": "New decision",
+      "overrideSubmit": "Override",
+      "adminOnly": "Only an organization administrator can change a decision."
+    },
+    "tabs": {
+      "answers": "Answers",
+      "violations": "Violations",
+      "history": "History"
+    },
+    "answers": {
+      "question": "Question {{n}}",
+      "marks": "{{got}} / {{total}} marks",
+      "yourAnswer": "Candidate's answer",
+      "correct": "Correct answer",
+      "noAnswer": "No answer given",
+      "modelAnswer": "Model answer",
+      "aiReason": "AI reason",
+      "manualReason": "Manual reason",
+      "scoredBy": {
+        "auto": "Scored automatically",
+        "ai": "Scored by AI",
+        "manual": "Scored by hand"
+      },
+      "needsManual": "Needs manual scoring",
+      "override": "Override score",
+      "overrideTitle": "Override the score",
+      "marksLabel": "Marks (0 to {{max}})",
+      "reasonLabel": "Reason (required)",
+      "save": "Save score",
+      "rescore": "Re-run AI scoring",
+      "type": {
+        "single_choice": "Single choice",
+        "multi_choice": "Multiple choice",
+        "fill_blank": "Fill in the blanks",
+        "code_gap": "Code gap",
+        "short_answer": "Short answer"
+      },
+      "blank": "Blank {{n}}"
+    },
+    "violations": {
+      "none": "No flags were recorded for this attempt.",
+      "summary": "{{count}} flags recorded",
+      "serious": "{{count}} serious",
+      "moderate": "{{count}} moderate",
+      "minor": "{{count}} minor",
+      "severity": {
+        "serious": "Serious",
+        "moderate": "Moderate",
+        "minor": "Minor",
+        "info": "Info"
+      },
+      "type": {
+        "unknown": "Flag",
+        "no_face": "No face in camera",
+        "multiple_faces": "More than one face",
+        "looking_away": "Looking away",
+        "tab_switch": "Switched tab",
+        "window_blur": "Window lost focus",
+        "fullscreen_exit": "Left fullscreen",
+        "camera_lost": "Camera lost",
+        "devtools_suspected": "Developer tools suspected",
+        "copy": "Copy attempt",
+        "paste": "Paste attempt",
+        "right_click": "Right-click attempt",
+        "reload": "Page reload",
+        "offline": "Went offline"
+      },
+      "duration": "{{seconds}} s",
+      "viewSnapshot": "View snapshot",
+      "snapshotTitle": "Snapshot",
+      "snapshotAlt": "Camera snapshot at the time of the flag",
+      "baseline": "Baseline photo",
+      "dismiss": "Dismiss",
+      "dismissed": "Dismissed",
+      "dismissTitle": "Dismiss this flag",
+      "dismissNote": "Note (required)",
+      "dismissSubmit": "Dismiss flag"
+    },
+    "history": {
+      "help": "Help requests",
+      "noHelp": "No help requests.",
+      "decisions": "Decision history",
+      "noDecisions": "No decision has been made yet.",
+      "override": "Override",
+      "from": "from {{value}}",
+      "reason": "Reason: {{value}}",
+      "extra": "{{count}} extra minutes granted",
+      "requestStatus": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "declined": "Declined"
+      },
+      "reasonType": {
+        "no_camera": "No camera",
+        "camera_not_working": "Camera not working",
+        "need_extra_time": "Needs extra time",
+        "other": "Other"
+      }
+    },
+    "extraTime": {
+      "button": "Grant extra time",
+      "title": "Grant extra time",
+      "minutes": "Extra minutes",
+      "reason": "Reason (required)",
+      "submit": "Grant"
+    },
+    "erase": {
+      "button": "Erase candidate data",
+      "title": "Erase candidate data?",
+      "body": "This removes the candidate's personal data and cannot be undone. Scores and decisions stay for reporting.",
+      "confirm": "Erase data"
+    },
+    "toast": {
+      "decided": "Decision saved.",
+      "overridden": "Decision overridden.",
+      "scored": "Score saved.",
+      "dismissed": "Flag dismissed.",
+      "extraTime": "Extra time granted.",
+      "erased": "Candidate data erased.",
+      "rescored": "Scoring started."
+    }
+  }
+}
