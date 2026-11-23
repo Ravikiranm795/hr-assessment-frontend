@@ -5,7 +5,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { api } from '@/core/api/client'
 import { useAuth } from '@/core/auth/AuthProvider'
-import { applyBranding, type BrandingOut } from '@/core/branding'
+import { applyBranding, loadLocalBranding, type BrandingOut } from '@/core/branding'
 import { resetTheme } from '@/core/theme'
 import { NotificationBell } from './NotificationBell'
 import { ProfileMenu } from './ProfileMenu'
@@ -32,8 +32,8 @@ export function AppShell() {
     staleTime: 5 * 60_000,
   })
   useEffect(() => {
-    if (branding.data) applyBranding(branding.data)
-  }, [branding.data])
+    if (branding.data) applyBranding(branding.data, loadLocalBranding(me?.organization?.id))
+  }, [branding.data, me?.organization?.id])
   useEffect(() => resetTheme, []) // back to the starter theme when the shell goes away (sign out)
 
   const leave = useCallback(() => {
@@ -46,7 +46,7 @@ export function AppShell() {
       <Sidebar items={items} role={role} rail={!!section} section={section} />
       {section && <SubmenuPanel section={section} />}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-6">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-6 nav-scope">
           <div className="flex items-center gap-3">
             {branding.data?.logo_url && <img src={branding.data.logo_url} alt="" className="h-7 w-auto" />}
             <span className="font-semibold">{me?.organization?.name ?? t('app.name')}</span>

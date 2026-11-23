@@ -15,6 +15,12 @@
   --color-text-muted: #4b5d73;
   --color-border: #d5e3e0;
   --color-highlight: #12d9b5;
+  /* Side and top navigation theme (Branding settings). Defaults follow the page tokens. */
+  --nav-bg: var(--color-surface);
+  --nav-text: var(--color-text);
+  --nav-muted: var(--color-text-muted);
+  --nav-border: var(--color-border);
+  --nav-hover: var(--color-bg);
   --radius: 0.75rem;
   --shadow: 0 1px 2px rgb(12 35 64 / 0.06), 0 4px 12px rgb(12 35 64 / 0.06);
   --font-sans: 'Inter Variable', system-ui, sans-serif;
@@ -44,6 +50,16 @@
   --shadow-card: var(--shadow);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+}
+
+/* Side bar, submenu panel and top bar: re-point the text, border and hover tokens to the nav theme. */
+.nav-scope {
+  background: var(--nav-bg);
+  color: var(--nav-text);
+  --color-text: var(--nav-text);
+  --color-text-muted: var(--nav-muted); /* `text-muted` resolves to this token, see @theme above */
+  --color-border: var(--nav-border);
+  --color-bg: var(--nav-hover);
 }
 
 html,

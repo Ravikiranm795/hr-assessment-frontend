@@ -56,12 +56,16 @@ export const examApi = {
   questions: () => api.get<QuestionsOut>('/api/v1/exam/questions', undefined, auth()),
   saveAnswer: (questionId: string, answer: AnswerValue) =>
     api.put<Schemas['AnswerOut']>(`/api/v1/exam/answers/${questionId}`, { answer }, auth()),
-  heartbeat: () => api.post<Schemas['HeartbeatOut']>('/api/v1/exam/heartbeat', undefined, auth()),
+  /** Also the proctoring heartbeat: the tab's session id and whether the page is visible. */
+  heartbeat: (body?: { session_id: string; visible: boolean }) =>
+    api.post<Schemas['HeartbeatOut'] & { ok?: boolean; server_time?: string }>('/api/v1/exam/heartbeat', body, auth()),
   events: (events: ExamEvent[], keepalive = false) =>
     api.post<Schemas['EventsOut']>('/api/v1/exam/events', { events }, auth({ keepalive })),
-  snapshot: (image: Blob) => {
+  /** Without `eventId` it is a periodic capture; with it, the photo is the proof attached to that event. */
+  snapshot: (image: Blob, eventId?: string) => {
     const form = new FormData()
     form.append('file', image, 'snapshot.jpg')
+    if (eventId) form.append('event_id', eventId)
     return api.upload<Schemas['SnapshotOut']>('/api/v1/exam/snapshots', form, auth())
   },
   createHelp: (reason: HelpReason, note: string) =>

@@ -1,31 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ExamEventType } from '../types'
+import { DevtoolsWatch } from './devtools'
+import { remoteDesktopSignals, watchMonitors } from './screenChecks'
 
 type Report = (type: ExamEventType, extra?: { durationMs?: number; meta?: Record<string, unknown> }) => void
 
 const DEVTOOLS_CHECK_MS = 2000
-// A docked dev-tools panel shrinks the page against the window. Normal browser chrome is about 80-140 px
-// tall, so the windowed thresholds are large; in fullscreen any gap at all is suspicious.
-const WINDOWED_W = 200
-const WINDOWED_H = 360
-const FULLSCREEN_GAP = 100
-
-function devtoolsLikelyOpen() {
-  const dw = window.outerWidth - window.innerWidth
-  const dh = window.outerHeight - window.innerHeight
-  if (document.fullscreenElement) return dw > FULLSCREEN_GAP || dh > FULLSCREEN_GAP
-  return dw > WINDOWED_W || dh > WINDOWED_H
-}
+/** Browsers fire several fullscreenchange events for one exit; count and report it once. */
+const FULLSCREEN_DEDUPE_MS = 1500
 
 /**
  * Detects what cannot be blocked: leaving the tab or window (with how long), leaving fullscreen,
  * a suspected dev-tools panel and losing the network. Each one is reported; none of them ends the exam.
  * `flushNow` sends queued events at once with `keepalive` when the page is hidden or closing.
  */
-export function useDetectors(active: boolean, report: Report, flushNow: () => void): { online: boolean } {
+export function useDetectors(
+  active: boolean,
+  report: Report,
+  flushNow: () => void,
+): { online: boolean; fullscreenExits: number } {
   const [online, setOnline] = useState(() => navigator.onLine)
+  const [fullscreenExits, setFullscreenExits] = useState(0)
   const reportRef = useRef(report)
   const flushRef = useRef(flushNow)
+  const remoteChecked = useRef(false) // the remote-desktop hint is reported once per attempt
   useEffect(() => {
     reportRef.current = report
     flushRef.current = flushNow
@@ -57,8 +55,14 @@ export function useDetectors(active: boolean, report: Report, flushNow: () => vo
       blurAt = null
       tabReported = false
     }
+    let lastExitAt = -Infinity
     const onFullscreen = () => {
-      if (document.fullscreenEnabled && !document.fullscreenElement) rep('fullscreen_exit')
+      if (!document.fullscreenEnabled || document.fullscreenElement) return
+      const now = performance.now()
+      if (now - lastExitAt < FULLSCREEN_DEDUPE_MS) return
+      lastExitAt = now
+      setFullscreenExits((n) => n + 1)
+      rep('fullscreen_exit')
     }
     let offlineAt: number | null = null
     const onOffline = () => {
@@ -72,12 +76,27 @@ export function useDetectors(active: boolean, report: Report, flushNow: () => vo
     }
     const onPageHide = () => flushRef.current()
 
-    let devtoolsOpen = false
+    const devtools = new DevtoolsWatch()
     const devtoolsTimer = setInterval(() => {
-      const open = devtoolsLikelyOpen()
-      if (open && !devtoolsOpen) rep('devtools_suspected')
-      devtoolsOpen = open
+      try {
+        const signals = devtools.check()
+        if (signals) rep('devtools_suspected', { meta: { signals } })
+      } catch {
+        // a failing probe never breaks the exam
+      }
     }, DEVTOOLS_CHECK_MS)
+
+    let stopMonitors: () => void = () => undefined
+    try {
+      stopMonitors = watchMonitors(rep)
+    } catch {
+      // ignore
+    }
+    if (!remoteChecked.current) {
+      remoteChecked.current = true
+      const signals = remoteDesktopSignals()
+      if (signals.length > 0) rep('remote_desktop_suspected', { meta: { signals } })
+    }
 
     document.addEventListener('visibilitychange', onVisibility)
     document.addEventListener('fullscreenchange', onFullscreen)
@@ -88,6 +107,7 @@ export function useDetectors(active: boolean, report: Report, flushNow: () => vo
     window.addEventListener('pagehide', onPageHide)
     return () => {
       clearInterval(devtoolsTimer)
+      stopMonitors()
       document.removeEventListener('visibilitychange', onVisibility)
       document.removeEventListener('fullscreenchange', onFullscreen)
       window.removeEventListener('blur', onBlur)
@@ -98,5 +118,5 @@ export function useDetectors(active: boolean, report: Report, flushNow: () => vo
     }
   }, [active])
 
-  return { online }
+  return { online, fullscreenExits }
 }

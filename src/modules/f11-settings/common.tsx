@@ -12,15 +12,17 @@ export function SettingsFrame({
   subtitle,
   query,
   children,
+  wide,
 }: {
   title: string
   subtitle?: string
+  wide?: boolean
   query?: Pick<UseQueryResult, 'isPending' | 'isError' | 'error' | 'refetch'>
   children: ReactNode
 }) {
   const { t } = useTranslation()
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className={`mx-auto space-y-6 ${wide ? 'max-w-6xl' : 'max-w-2xl'}`}>
       <header>
         <h1 className="text-2xl font-semibold">{title}</h1>
         {subtitle && <p className="text-sm text-muted">{subtitle}</p>}

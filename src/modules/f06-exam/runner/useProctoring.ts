@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCamera } from '../proctor/camera'
 import { EventReporter } from '../proctor/eventReporter'
+import type { ImageEmbedder } from '@mediapipe/tasks-vision'
+import { FACE_MATCH_SAMPLE_MS, FaceMatchWatch, loadFaceEmbedder } from '../proctor/faceMatch'
 import { FaceWatch, loadFaceDetector, sampleFaces } from '../proctor/faceMonitor'
-import { SnapshotUploader } from '../proctor/snapshots'
+import { OBJECT_SAMPLE_MS, ObjectWatch, loadObjectDetector, samplePhone } from '../proctor/objectMonitor'
+import { SnapshotUploader, captureFrame } from '../proctor/snapshots'
 import { useDetectors } from '../proctor/useDetectors'
 import { useLockdown } from '../proctor/useLockdown'
 import type { ExamEventType } from '../types'
@@ -14,7 +17,7 @@ interface Options {
   /** True while the exam is running and the candidate can still answer. */
   active: boolean
   cameraRequired: boolean
-  snapshotIntervalSeconds: number
+  snapshotIntervalSeconds?: number | null
   /** The page was reloaded while the exam was in progress. */
   resumed: boolean
 }
@@ -63,7 +66,7 @@ export function useProctoring({ active, cameraRequired, snapshotIntervalSeconds,
   )
 
   useLockdown(active, report, onBlocked)
-  const { online } = useDetectors(active, report, flushNow)
+  const { online, fullscreenExits } = useDetectors(active, report, flushNow)
 
   // Camera lost is an event, and the page shows a banner; the exam keeps running (F-09).
   useEffect(() => {
@@ -79,12 +82,21 @@ export function useProctoring({ active, cameraRequired, snapshotIntervalSeconds,
     let timer: ReturnType<typeof setInterval> | null = null
     const watch = new FaceWatch((type, extra) => report(type, extra))
     faceWatch.current = watch
+    const match = new FaceMatchWatch((type, extra) => report(type, extra))
+    let embedder: ImageEmbedder | null = null
+    void loadFaceEmbedder().then((e) => {
+      embedder = e
+    })
+    let ticks = 0
+    const matchEvery = Math.round(FACE_MATCH_SAMPLE_MS / FACE_SAMPLE_MS)
     void loadFaceDetector().then((detector) => {
       if (cancelled || !detector) return
       timer = setInterval(() => {
         const video = monitorVideo.current
         const sample = video ? sampleFaces(detector, video) : null
         if (sample) watch.tick(sample)
+        ticks += 1
+        if (video && sample && embedder && ticks % matchEvery === 0) match.tick(embedder, video, sample)
       }, FACE_SAMPLE_MS)
     })
     return () => {
@@ -95,12 +107,43 @@ export function useProctoring({ active, cameraRequired, snapshotIntervalSeconds,
     }
   }, [active, cameraRequired, stream, report])
 
+  // Phone detection: lazy model, sampled on the same hidden video. A load failure is silent.
+  useEffect(() => {
+    if (!active || !cameraRequired || !stream) return
+    let cancelled = false
+    let timer: ReturnType<typeof setInterval> | null = null
+    const watch = new ObjectWatch((type, extra) => report(type, extra))
+    void loadObjectDetector().then((detector) => {
+      if (cancelled || !detector) return
+      timer = setInterval(() => {
+        const video = monitorVideo.current
+        const score = video ? samplePhone(detector, video) : null
+        if (score !== null) watch.tick(score)
+      }, OBJECT_SAMPLE_MS)
+    })
+    return () => {
+      cancelled = true
+      if (timer) clearInterval(timer)
+    }
+  }, [active, cameraRequired, stream, report])
+
   useEffect(() => {
     if (!active || !cameraRequired || !stream) return
     const uploader = new SnapshotUploader(() => monitorVideo.current, snapshotIntervalSeconds)
     uploader.start()
     return () => uploader.stop()
   }, [active, cameraRequired, stream, snapshotIntervalSeconds])
+
+  // Proof photos for serious violations: the reporter grabs a frame when an event happens.
+  useEffect(() => {
+    const current = reporter.current
+    if (!active || !cameraRequired || !stream || !current) return
+    current.setFrameProvider(() => {
+      const video = monitorVideo.current
+      return video ? captureFrame(video) : Promise.resolve(null)
+    })
+    return () => current.setFrameProvider(null)
+  }, [active, cameraRequired, stream])
 
   const setMonitorVideo = useCallback((el: HTMLVideoElement | null) => {
     monitorVideo.current = el
@@ -112,5 +155,5 @@ export function useProctoring({ active, cameraRequired, snapshotIntervalSeconds,
     await reporter.current?.flush()
   }, [])
 
-  return { report, online, blockedNote, setMonitorVideo, finish }
+  return { report, online, fullscreenExits, blockedNote, setMonitorVideo, finish }
 }

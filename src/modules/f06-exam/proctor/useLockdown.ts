@@ -17,6 +17,19 @@ function isBlockedShortcut(e: KeyboardEvent): boolean {
   return ['u', 'p', 's'].includes(key) // view source, print, save
 }
 
+/** A non-editable selection at least this long is reported (selectstart already blocks most selections). */
+const SELECTION_MIN_CHARS = 20
+
+/** Keys that switch window, tab or app, or close the window. Returns true when the browser may let us block it. */
+function appSwitchKind(e: KeyboardEvent): 'meta' | 'combo' | null {
+  if (e.key === 'Meta' || e.key === 'OS') return 'meta'
+  const key = e.key.toLowerCase()
+  if (e.altKey && ['tab', 'escape', 'f4'].includes(key)) return 'combo'
+  if (e.metaKey && key === 'tab') return 'combo'
+  if (e.ctrlKey && ['tab', 'w', 'n', 't'].includes(key)) return 'combo'
+  return null
+}
+
 /**
  * Blocks what a browser lets a page block and reports each attempt as an event. Nothing here ends the
  * exam: the candidate can always carry on. Reload and back are covered by the `beforeunload` warning.
@@ -47,10 +60,45 @@ export function useLockdown(active: boolean, report: Report, onBlocked: () => vo
       [
         'keydown',
         (e: KeyboardEvent) => {
+          try {
+            if (e.key === 'PrintScreen') return onPrintScreen(e)
+            const kind = e.repeat ? null : appSwitchKind(e)
+            if (kind) {
+              if (kind === 'combo') e.preventDefault() // the browser or OS may still win; the attempt is reported
+              reportRef.current('app_switch_shortcut', { meta: { key: e.key } })
+              return
+            }
+          } catch {
+            // a failing detector never breaks the exam
+          }
           if (isBlockedShortcut(e)) block(e, 'devtools_shortcut')
         },
       ],
+      ['keyup', (e: KeyboardEvent) => e.key === 'PrintScreen' && onPrintScreen(e)],
     ]
+    const onPrintScreen = (e: KeyboardEvent) => {
+      try {
+        reportRef.current('print_screen')
+        void navigator.clipboard?.writeText('').catch(() => undefined) // best effort: clears a captured image
+        if (e.type === 'keydown') e.preventDefault()
+      } catch {
+        // ignore
+      }
+    }
+    // `selectstart` blocks selecting; a selection that still happens (programmatic, drag from an input) is reported.
+    const onSelectionChange = () => {
+      try {
+        const selection = document.getSelection()
+        if (!selection || selection.isCollapsed) return
+        const anchor = selection.anchorNode instanceof Element ? selection.anchorNode : selection.anchorNode?.parentElement
+        if (isEditable(anchor ?? null) || isEditable(document.activeElement)) return
+        const length = selection.toString().length
+        if (length >= SELECTION_MIN_CHARS) reportRef.current('text_selection', { meta: { length } })
+      } catch {
+        // ignore
+      }
+    }
+    document.addEventListener('selectionchange', onSelectionChange)
     for (const [name, fn] of handlers) document.addEventListener(name, fn as EventListener, true)
 
     // Reload, back and close ask for confirmation. Browsers show their own text.
@@ -61,6 +109,7 @@ export function useLockdown(active: boolean, report: Report, onBlocked: () => vo
     window.addEventListener('beforeunload', warn)
     return () => {
       for (const [name, fn] of handlers) document.removeEventListener(name, fn as EventListener, true)
+      document.removeEventListener('selectionchange', onSelectionChange)
       window.removeEventListener('beforeunload', warn)
     }
   }, [active])

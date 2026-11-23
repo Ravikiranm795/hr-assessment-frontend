@@ -1,8 +1,16 @@
 import { examApi } from '../examApi'
 
-/** Backend limits: one snapshot per 20 s and 300 per attempt. */
-export const MIN_SNAPSHOT_GAP_S = 20
-export const MAX_SNAPSHOTS = 300
+/** Periodic proof photos: every 15 s by default; the server value is clamped to 10-15 s. */
+export const MIN_SNAPSHOT_GAP_S = 10
+export const DEFAULT_SNAPSHOT_INTERVAL_S = 15
+export const MAX_SNAPSHOTS = 720
+const TARGET_BYTES = 40 * 1024
+
+/** Effective interval: default 15 s when missing or larger, never below 10 s. */
+export function effectiveSnapshotInterval(serverSeconds: number | null | undefined): number {
+  if (typeof serverSeconds !== 'number' || !Number.isFinite(serverSeconds) || serverSeconds <= 0) return DEFAULT_SNAPSHOT_INTERVAL_S
+  return Math.min(DEFAULT_SNAPSHOT_INTERVAL_S, Math.max(MIN_SNAPSHOT_GAP_S, serverSeconds))
+}
 
 /** Draw the current video frame to a JPEG; null if the camera has no frame yet. */
 export function captureFrame(video: HTMLVideoElement, quality = 0.7): Promise<Blob | null> {
@@ -26,16 +34,16 @@ export class SnapshotUploader {
   private sent = 0
   private lastAt = -Infinity
   private readonly getVideo: () => HTMLVideoElement | null
+  private busy = false
   private readonly intervalSeconds: number
 
-  constructor(getVideo: () => HTMLVideoElement | null, intervalSeconds: number) {
+  constructor(getVideo: () => HTMLVideoElement | null, intervalSeconds: number | null | undefined) {
     this.getVideo = getVideo
-    this.intervalSeconds = intervalSeconds
+    this.intervalSeconds = effectiveSnapshotInterval(intervalSeconds)
   }
 
   start() {
-    const seconds = Math.max(this.intervalSeconds, MIN_SNAPSHOT_GAP_S + 1)
-    this.timer ??= setInterval(() => void this.tick(), seconds * 1000)
+    this.timer ??= setInterval(() => void this.tick(), this.intervalSeconds * 1000)
   }
 
   stop() {
@@ -44,17 +52,23 @@ export class SnapshotUploader {
   }
 
   private async tick() {
+    // Never queue a backlog: skip while the previous upload is running, the tab is hidden or the video is not ready.
+    if (this.busy || document.hidden) return
     const video = this.getVideo()
     const now = performance.now()
-    if (!video || this.sent >= MAX_SNAPSHOTS || now - this.lastAt < MIN_SNAPSHOT_GAP_S * 1000) return
-    const frame = await captureFrame(video)
-    if (!frame) return
-    this.lastAt = now
+    if (!video || video.paused || this.sent >= MAX_SNAPSHOTS || now - this.lastAt < MIN_SNAPSHOT_GAP_S * 1000) return
+    this.busy = true
     try {
+      let frame = await captureFrame(video, 0.6)
+      if (frame && frame.size > TARGET_BYTES) frame = (await captureFrame(video, 0.45)) ?? frame
+      if (!frame) return
+      this.lastAt = now
       await examApi.snapshot(frame)
       this.sent += 1
     } catch {
-      // rate limited, offline or the exam ended: the next tick tries again within the limits
+      // rate limited, offline or the exam ended: this photo is dropped, never retried
+    } finally {
+      this.busy = false
     }
   }
 }

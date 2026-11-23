@@ -15,6 +15,7 @@ import { HistoryTab } from './HistoryTab'
 import { ScoreCard } from './ScoreCard'
 import type { Attempt } from './types'
 import { Badge } from '@/components/Badge'
+import { PhotosTab } from './PhotosTab'
 import { ViolationsTab } from './ViolationsTab'
 
 const TAB = 'rounded-t-(--radius) border-b-2 border-transparent px-4 py-2 text-sm font-medium text-muted data-[state=active]:border-primary data-[state=active]:text-text'
@@ -76,10 +77,12 @@ export function ReviewPage() {
         <Tabs.List className="flex gap-1 border-b border-border" aria-label={t('review.title')}>
           <Tabs.Trigger value="answers" className={TAB}>{t('review.tabs.answers')}</Tabs.Trigger>
           <Tabs.Trigger value="violations" className={TAB}>{t('review.tabs.violations')}</Tabs.Trigger>
+          <Tabs.Trigger value="photos" className={TAB}>{t('review.tabs.photos')}</Tabs.Trigger>
           <Tabs.Trigger value="history" className={TAB}>{t('review.tabs.history')}</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="answers" className="pt-4"><AnswersTab attempt={a} onChanged={refresh} /></Tabs.Content>
         <Tabs.Content value="violations" className="pt-4"><ViolationsTab attempt={a} onChanged={refresh} /></Tabs.Content>
+        <Tabs.Content value="photos" className="pt-4"><PhotosTab attempt={a} onChanged={refresh} /></Tabs.Content>
         <Tabs.Content value="history" className="pt-4"><HistoryTab attempt={a} /></Tabs.Content>
       </Tabs.Root>
 

@@ -164,13 +164,15 @@
       "reconnect": "Reconnect the camera"
     },
     "offline": "You are offline. Your answers are kept on this device and will be sent when the connection returns. The timer keeps running.",
+    "heartbeatLost": "The connection to proctoring was lost. Please check your network. You can keep answering.",
     "status": {
       "saving": "Saving your answers…",
       "saved": "All answers saved."
     },
     "fullscreen": {
       "title": "Return to fullscreen",
-      "body": "The exam runs in fullscreen. Return to fullscreen to carry on. Your timer is still running.",
+      "body": "You left fullscreen. Please return to fullscreen. You can keep answering, and your timer is still running.",
+      "strongBody": "You have left fullscreen several times. Each exit is recorded and reviewed. Please return to fullscreen and stay in it.",
       "return": "Return to fullscreen"
     },
     "lockdown": { "note": "That action is turned off during the exam." },

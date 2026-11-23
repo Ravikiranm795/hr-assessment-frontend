@@ -14,7 +14,29 @@ const BURST_TYPES = new Set<ExamEventType>([
   'cut_attempt',
   'paste_attempt',
   'devtools_shortcut',
+  'app_switch_shortcut',
+  'print_screen',
+  'text_selection',
 ])
+
+/**
+ * Events the server can rate serious: a frame is taken for these when they happen. The server decides
+ * which ones really are serious (multiple faces, camera lost, repeated tab switches); the browser only
+ * keeps the candidate evidence ready. Few frames are held at once to bound memory.
+ */
+const PROOF_TYPES = new Set<ExamEventType>([
+  'tab_switch',
+  'window_blur',
+  'multiple_faces',
+  'camera_lost',
+  'phone_detected',
+  'face_mismatch',
+  'fullscreen_exit',
+  'multi_monitor',
+  'devtools_suspected',
+  'app_switch_shortcut',
+])
+const MAX_PENDING_FRAMES = 20
 
 /**
  * Collects proctoring events and sends them in batches of at most 50: every few seconds, and
@@ -23,6 +45,10 @@ const BURST_TYPES = new Set<ExamEventType>([
  */
 export class EventReporter {
   private queue: ExamEvent[] = []
+  /** A frame is taken when the event happens; it is uploaded only if the server rates the event serious. */
+  private frames = new WeakMap<ExamEvent, Promise<Blob | null>>()
+  private pendingFrames = 0
+  private frameProvider: (() => Promise<Blob | null>) | null = null
   private timer: ReturnType<typeof setInterval> | null = null
   private sending = false
   private stopped = false
@@ -39,6 +65,11 @@ export class EventReporter {
     this.timer = null
   }
 
+  /** Where proof frames come from (the camera). Null when there is no camera. */
+  setFrameProvider(provider: (() => Promise<Blob | null>) | null) {
+    this.frameProvider = provider
+  }
+
   report(type: ExamEventType, extra: { durationMs?: number; meta?: Record<string, unknown> } = {}) {
     if (this.stopped) return
     if (BURST_TYPES.has(type)) {
@@ -50,6 +81,10 @@ export class EventReporter {
     const event: ExamEvent = { type, occurred_at: new Date().toISOString() }
     if (extra.durationMs !== undefined) event.duration_ms = Math.max(0, Math.round(extra.durationMs))
     if (extra.meta) event.meta = extra.meta
+    if (this.frameProvider && PROOF_TYPES.has(type) && this.pendingFrames < MAX_PENDING_FRAMES) {
+      this.frames.set(event, this.frameProvider().catch(() => null))
+      this.pendingFrames += 1
+    }
     this.queue.push(event)
     if (this.queue.length > QUEUE_MAX) this.queue.splice(0, this.queue.length - QUEUE_MAX)
     if (this.queue.length >= BATCH_MAX) void this.flush()
@@ -62,7 +97,9 @@ export class EventReporter {
       const batch = this.queue.splice(0, BATCH_MAX)
       this.sending = true
       try {
-        await examApi.events(batch, keepalive)
+        const result = await examApi.events(batch, keepalive)
+        this.pendingFrames = Math.max(0, this.pendingFrames - batch.filter((e) => this.frames.has(e)).length)
+        for (const item of result.serious ?? []) void this.uploadProof(batch[item.index], item.event_id)
       } catch (error) {
         // The network or server failed: keep the batch for the next tick. Anything else (the exam is not
         // running, the session ended) cannot succeed later, so the batch is dropped.
@@ -71,12 +108,24 @@ export class EventReporter {
           if (this.queue.length > QUEUE_MAX) this.queue.length = QUEUE_MAX
         } else if (error instanceof ApiError && error.status === 409) {
           this.queue.length = 0
+          this.pendingFrames = 0
         }
         return
       } finally {
         this.sending = false
       }
       if (keepalive) return
+    }
+  }
+
+  /** Attach the frame taken at the moment of a serious event. Silent on failure, like every proctoring call. */
+  private async uploadProof(event: ExamEvent | undefined, eventId: string) {
+    const frame = event ? await this.frames.get(event) : null
+    if (!frame) return
+    try {
+      await examApi.snapshot(frame, eventId)
+    } catch {
+      // rate limited, offline or the exam ended: the proof is best-effort and never disturbs the candidate
     }
   }
 }

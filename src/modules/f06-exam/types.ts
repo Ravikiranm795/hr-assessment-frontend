@@ -34,6 +34,16 @@ export type ExamEventType =
   | 'devtools_suspected'
   | 'page_reload'
   | 'offline'
+  | 'app_switch_shortcut'
+  | 'print_screen'
+  | 'text_selection'
+  | 'multi_monitor'
+  | 'remote_desktop_suspected'
+  | 'phone_detected'
+  | 'face_mismatch'
+  // Server-generated, never sent by the browser (display only)
+  | 'second_session'
+  | 'heartbeat_gap'
 
 export interface ExamEvent {
   type: ExamEventType

@@ -8,6 +8,7 @@ import { examErrorText, isAlreadySubmitted, isSessionLost, isTerminal } from '..
 import { ExamLayout } from '../ExamLayout'
 import { HelpPanel } from '../HelpPanel'
 import { CameraVideo, useCamera } from '../proctor/camera'
+import { HEARTBEAT_FAIL_LIMIT, getProctorSessionId } from '../proctor/heartbeat'
 import { useFocusOnMount } from '../Screens'
 import type { AnswerValue, ExamQuestion, ExamState } from '../types'
 import { AnswerSync } from './answerSync'
@@ -16,7 +17,9 @@ import { QuestionView, isAnswered, type AnswerKind } from './QuestionView'
 import { formatClock, useServerClock } from './useServerClock'
 import { useProctoring } from './useProctoring'
 
-const HEARTBEAT_MS = 15_000
+const HEARTBEAT_MS = 10_000
+/** After this many fullscreen exits the banner turns into a stronger (still non-blocking) warning. */
+const FULLSCREEN_STRONG_AFTER = 3
 const ANNOUNCE_AT = [600, 300, 60]
 const SUBMIT_TRIES = 4
 
@@ -92,6 +95,7 @@ function ExamSurface({ state, inviteToken, resumed, onSubmitted, onFatal, refres
   const [submitError, setSubmitError] = useState<'save' | 'submit' | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const [fullscreen, setFullscreen] = useState(() => !!document.fullscreenElement)
+  const [heartbeatLost, setHeartbeatLost] = useState(false)
 
   const sync = useRef<AnswerSync | null>(null)
   const submittingRef = useRef(false)
@@ -193,19 +197,27 @@ function ExamSurface({ state, inviteToken, resumed, onSubmitted, onFatal, refres
   const loaded = questions !== null
   useEffect(() => {
     if (!loaded) return
+    let fails = 0
     const beat = async () => {
       try {
-        const out = await examApi.heartbeat()
+        const out = await examApi.heartbeat({
+          session_id: getProctorSessionId(),
+          visible: document.visibilityState === 'visible',
+        })
+        fails = 0
+        setHeartbeatLost(false)
         syncClock(out.remaining_seconds)
         if (out.status === 'submitted') onSubmitted()
         else if (out.time_over) void finalizeRef.current(true)
       } catch (error) {
+        fails += 1
+        if (fails >= HEARTBEAT_FAIL_LIMIT && navigator.onLine) setHeartbeatLost(true)
         if (isAlreadySubmitted(error)) onSubmitted()
         else if (isTerminal(error)) onFatal(error)
         else if (isSessionLost(error)) await examApi.reopen().catch(() => undefined)
       }
     }
-    const onVisible = () => document.visibilityState === 'visible' && void beat()
+    const onVisible = () => void beat()
     const id = setInterval(() => void beat(), HEARTBEAT_MS)
     window.addEventListener('online', beat)
     document.addEventListener('visibilitychange', onVisible)
@@ -273,7 +285,7 @@ function ExamSurface({ state, inviteToken, resumed, onSubmitted, onFatal, refres
   const question = questions[current]
   return (
     <ExamLayout state={state} narrow={false}>
-      <div inert={needsFullscreen} className="select-none print:hidden [&_input]:select-text [&_textarea]:select-text">
+      <div className="select-none print:hidden [&_input]:select-text [&_textarea]:select-text">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-(--radius) border border-border bg-surface px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted">{t('exam.timer.label')}</span>
@@ -298,6 +310,11 @@ function ExamSurface({ state, inviteToken, resumed, onSubmitted, onFatal, refres
               {t('exam.camera.reconnect')}
             </Button>
           </div>
+        )}
+        {heartbeatLost && proctoring.online && (
+          <p role="status" className="mb-4 rounded-(--radius) border border-warning bg-surface p-4 text-sm">
+            {t('exam.heartbeatLost')}
+          </p>
         )}
         {!proctoring.online && (
           <p role="status" className="mb-4 rounded-(--radius) border border-border bg-surface p-4 text-sm">
@@ -363,24 +380,17 @@ function ExamSurface({ state, inviteToken, resumed, onSubmitted, onFatal, refres
 
       {needsFullscreen && (
         <div
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby="fs-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-bg/95 p-8"
+          role="alert"
+          className={`fixed inset-x-0 top-0 z-50 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 shadow-card bg-surface ${
+            proctoring.fullscreenExits >= FULLSCREEN_STRONG_AFTER ? 'border-error' : 'border-warning'
+          }`}
         >
-          <div className="max-w-md space-y-4 rounded-(--radius) border border-border bg-surface p-8 text-center shadow-card">
-            <h2 id="fs-title" className="text-xl font-semibold">
-              {t('exam.fullscreen.title')}
-            </h2>
-            <p className="text-muted">{t('exam.fullscreen.body')}</p>
-            <Button
-              size="lg"
-              autoFocus
-              onClick={() => void document.documentElement.requestFullscreen().catch(() => undefined)}
-            >
-              {t('exam.fullscreen.return')}
-            </Button>
-          </div>
+          <p className="text-sm font-medium">
+            {t(proctoring.fullscreenExits >= FULLSCREEN_STRONG_AFTER ? 'exam.fullscreen.strongBody' : 'exam.fullscreen.body')}
+          </p>
+          <Button size="sm" onClick={() => void document.documentElement.requestFullscreen().catch(() => undefined)}>
+            {t('exam.fullscreen.return')}
+          </Button>
         </div>
       )}
 

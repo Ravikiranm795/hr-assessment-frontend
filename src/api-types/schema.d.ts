@@ -2307,7 +2307,7 @@ export interface paths {
         put?: never;
         /**
          * Proctoring events
-         * @description Up to 50 per call. Severity is assigned by the server; events never stop the exam.
+         * @description Up to 50 per call. Severity is assigned by the server; events never stop the exam. `serious` lists the accepted events rated serious (request index + event id) so the client can attach a photo with POST /exam/snapshots `event_id`.
          */
         post: operations["events_api_v1_exam_events_post"];
         delete?: never;
@@ -4738,6 +4738,8 @@ export interface components {
             accepted: number;
             /** Ignored */
             ignored: number;
+            /** Serious */
+            serious?: components["schemas"]["SeriousEventOut"][];
         };
         /** ExportRequest */
         ExportRequest: {
@@ -6674,6 +6676,21 @@ export interface components {
              * @description Refine instead
              */
             text?: string | null;
+        };
+        /**
+         * SeriousEventOut
+         * @description An accepted event the server rated serious: the client may attach a photo to it (POST /exam/snapshots).
+         */
+        SeriousEventOut: {
+            /** Index */
+            index: number;
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Type */
+            type: string;
         };
         /** SnapshotOut */
         SnapshotOut: {
@@ -22258,7 +22275,14 @@ export interface operations {
                     /**
                      * @example {
                      *       "accepted": 1,
-                     *       "ignored": 1
+                     *       "ignored": 1,
+                     *       "serious": [
+                     *         {
+                     *           "index": 1,
+                     *           "event_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "type": "string"
+                     *         }
+                     *       ]
                      *     }
                      */
                     "application/json": components["schemas"]["EventsOut"];

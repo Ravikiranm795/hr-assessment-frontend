@@ -53,7 +53,26 @@
     "tabs": {
       "answers": "Answers",
       "violations": "Violations",
+      "photos": "Photos",
       "history": "History"
+    },
+    "photos": {
+      "prev": "Previous",
+      "next": "Next",
+      "periodic": "Periodic photo",
+      "count": "{{count}} photos",
+      "violationsOnly": "Violations only",
+      "empty": "No photos to show.",
+      "loadMore": "Load more",
+      "purged": "Photos were deleted on {{date}}.",
+      "needDecision": "Photos can be deleted after you record a decision.",
+      "autoDelete": "Photos will be deleted automatically on {{date}}.",
+      "autoDeleteLater": "Photos will be deleted automatically after the retention period.",
+      "deleteNow": "Delete photos now",
+      "deleteTitle": "Delete all photos?",
+      "deleteBody": "This permanently deletes every photo of this attempt and cannot be undone. Answers, scores, the violations log and the decision are kept.",
+      "understand": "I understand",
+      "deleteConfirm": "Delete photos"
     },
     "answers": {
       "question": "Question {{n}}",
@@ -111,7 +130,30 @@
         "paste": "Paste attempt",
         "right_click": "Right-click attempt",
         "reload": "Page reload",
-        "offline": "Went offline"
+        "offline": "Went offline",
+        "copy_attempt": "Copy attempt",
+        "cut_attempt": "Cut attempt",
+        "paste_attempt": "Paste attempt",
+        "context_menu": "Right-click attempt",
+        "devtools_shortcut": "Developer tools shortcut",
+        "page_reload": "Page reload",
+        "app_switch_shortcut": "App-switch shortcut",
+        "print_screen": "Screenshot key pressed",
+        "text_selection": "Text selected",
+        "multi_monitor": "Extra monitor detected",
+        "remote_desktop_suspected": "Remote desktop or virtual machine suspected",
+        "phone_detected": "Phone detected in camera",
+        "face_mismatch": "Face differs from baseline photo",
+        "second_session": "Second session opened",
+        "heartbeat_gap": "Connection gap (no heartbeat)"
+      },
+      "risk": {
+        "label": "Risk",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "score": "score {{score}}",
+        "flagged": "Flagged for review"
       },
       "duration": "{{seconds}} s",
       "viewSnapshot": "View snapshot",
@@ -163,6 +205,7 @@
       "overridden": "Decision overridden.",
       "scored": "Score saved.",
       "dismissed": "Flag dismissed.",
+      "photosDeleted": "Photos deleted.",
       "extraTime": "Extra time granted.",
       "erased": "Candidate data erased.",
       "rescored": "Scoring started."

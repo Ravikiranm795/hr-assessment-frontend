@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/Badge'
 import { Button } from '@/components/Button'
@@ -18,6 +18,16 @@ interface Props {
   onReset: () => void
 }
 
+interface Result {
+  key: number
+  report: Report
+  format: Format
+  /** The file once fetched (kept in memory so an older format stays downloadable). */
+  blob: Blob | null
+  filename: string | null
+}
+let resultSeq = 0
+
 /** Steps after the filter is confirmed: row count, columns, format, generate, download. */
 export function ConfirmedPanel({ scope, report, onReset }: Props) {
   const { t } = useTranslation()
@@ -32,7 +42,9 @@ export function ConfirmedPanel({ scope, report, onReset }: Props) {
 
   const [format, setFormat] = useState<Format>('csv')
   const [picked, setPicked] = useState<Set<string> | null>(null)
-  const [done, setDone] = useState<Report | null>(null)
+  // Every generation adds a result card below the form; the form stays so the other format can be made next.
+  const [results, setResults] = useState<Result[]>([])
+  const [latestKey, setLatestKey] = useState<number | null>(null)
   const selected = picked ?? new Set(report.columns ?? [])
   // Columns keep the catalog's order, whatever order they were ticked in.
   const orderedColumns = source ? source.fields.filter((f) => selected.has(f.name)).map((f) => f.name) : [...selected]
@@ -48,19 +60,38 @@ export function ConfirmedPanel({ scope, report, onReset }: Props) {
     mutationFn: () =>
       api.post<Report>(`${basePath(scope)}/${report.id}/generate`, aggregate ? { format } : { format, columns: orderedColumns }),
     onSuccess: (r) => {
-      setDone(r)
+      // One card per format: generating the same format again refreshes its card instead of adding another.
+      const fresh: Result = { key: ++resultSeq, report: r, format: r.format ?? format, blob: null, filename: null }
+      setLatestKey(fresh.key)
+      setResults((list) =>
+        list.some((x) => x.format === fresh.format) ? list.map((x) => (x.format === fresh.format ? fresh : x)) : [...list, fresh],
+      )
       void queryClient.invalidateQueries({ queryKey: ['reports', scope, 'history'] })
     },
   })
 
+  // The server keeps only the newest file per report, so only the newest card can fetch; a fetched file
+  // is kept in memory on its card, which is how both a CSV and a PDF can be downloaded for one report.
   const download = useMutation({
-    mutationFn: async () => {
-      const { blob, filename } = await requestFile(`${basePath(scope)}/${report.id}/download`)
-      saveBlob(blob, filename ?? `report.${done?.format ?? format}`)
+    mutationFn: async (result: Result) => {
+      let { blob, filename } = result
+      if (!blob) {
+        const file = await requestFile(`${basePath(scope)}/${report.id}/download`)
+        blob = file.blob
+        filename = file.filename ?? `report.${result.format}`
+        setResults((list) => list.map((x) => (x.key === result.key ? { ...x, blob, filename } : x)))
+      }
+      saveBlob(blob, filename ?? `report.${result.format}`)
     },
     onSuccess: () => toast.success(t('reports.download.done')),
     onError: () => void queryClient.invalidateQueries({ queryKey: ['reports', scope, 'history'] }),
   })
+
+  // Bring a freshly added result into view (it appears below the form).
+  const lastResult = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (latestKey !== null) lastResult.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [latestKey])
 
   const toggle = (name: string) => {
     const next = new Set(selected)
@@ -69,24 +100,8 @@ export function ConfirmedPanel({ scope, report, onReset }: Props) {
     setPicked(next)
   }
 
-  if (done) {
-    return (
-      <section aria-labelledby="report-done" className="space-y-4 rounded-(--radius) border border-border bg-surface p-5 shadow-card">
-        <h2 id="report-done" className="text-lg font-semibold">{t('reports.done.title')}</h2>
-        <p className="text-sm text-muted">
-          {t('reports.done.body', { count: done.row_count ?? 0, rows: formatNumber(done.row_count ?? 0), format: (done.format ?? format).toUpperCase() })}
-        </p>
-        <p className="text-sm text-muted">{t('reports.retention')}</p>
-        {download.error && <ReportError error={download.error} scope={scope} />}
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => download.mutate()} loading={download.isPending}>{t('reports.download.button')}</Button>
-          <Button variant="outline" onClick={onReset}>{t('reports.another')}</Button>
-        </div>
-      </section>
-    )
-  }
-
   return (
+    <div className="space-y-6">
     <section aria-labelledby="report-confirmed" className="space-y-5 rounded-(--radius) border border-border bg-surface p-5 shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -167,5 +182,35 @@ export function ConfirmedPanel({ scope, report, onReset }: Props) {
         </Button>
       </div>
     </section>
+
+    {results.map((result) => {
+      const latest = result.key === latestKey
+      const rowCount = result.report.row_count ?? 0
+      // Older cards can only download if their file was already fetched.
+      const canDownload = latest || result.blob !== null
+      return (
+        <section
+          key={result.key}
+          ref={latest ? lastResult : undefined}
+          aria-label={t('reports.done.title')}
+          className="space-y-4 rounded-(--radius) border border-border bg-surface p-5 shadow-card"
+        >
+          <h2 className="text-lg font-semibold">{t('reports.done.title')}</h2>
+          <p className="text-sm text-muted">
+            {t('reports.done.body', { count: rowCount, rows: formatNumber(rowCount), format: result.format.toUpperCase() })}
+          </p>
+          {latest && <p className="text-sm text-muted">{t('reports.retention')}</p>}
+          {!canDownload && <p className="text-sm text-muted">{t('reports.done.replaced', { format: result.format.toUpperCase() })}</p>}
+          {latest && download.error && <ReportError error={download.error} scope={scope} />}
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => download.mutate(result)} loading={download.isPending && download.variables?.key === result.key} disabled={!canDownload}>
+              {t('reports.download.button')} ({result.format.toUpperCase()})
+            </Button>
+            {latest && <Button variant="outline" onClick={onReset}>{t('reports.another')}</Button>}
+          </div>
+        </section>
+      )
+    })}
+    </div>
   )
 }

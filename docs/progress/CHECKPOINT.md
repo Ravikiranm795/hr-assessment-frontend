@@ -7,6 +7,12 @@ Status: ALL PLANNED MODULES BUILT (2026-11-17). Remaining work is verification w
 - Gates: `npm run typecheck` 0 errors, `npm run lint` 0 errors (a few warnings), `npm run build` succeeds (one 2 MB chunk).
 - Full Playwright suite (75 tests, one worker): 74 passed in the first run; the one failure (exam golden flow: camera `<video>` not visible within the default 5 s on a cold start) passed on a re-run of the exam folder (7/7). The wait for that step was then raised to 20 s; the full suite has NOT been re-run since that edit.
 
+## 2026-11-23 proctoring hardening (frontend)
+Added app-switch/PrintScreen/selection/multi-monitor/devtools/remote-desktop/phone/face-mismatch detectors, 10 s heartbeat with session id and lost-connection banner, non-blocking fullscreen banner (no more lock overlay), review risk badge. Models in `public/mediapipe/` (efficientdet_lite0, mobilenet_v3_small). Not manually tested with a real camera; face match and phone thresholds need tuning.
+
+## 2026-11-23 proof photos
+Exam snapshots every 15 s (clamped 10-15 s, drop-not-retry); review Photos tab with lazy thumbnails, violations filter, prev/next modal, retention banner and "Delete photos now" (needs backend `/photos`, `/photos/delete`); typecheck/lint only, not run against the real backend.
+
 ## What is NOT proven (needs real services or people)
 - **Real face detection** (MediaPipe no-face, multiple faces, looking away): Playwright uses a fake camera with no face. A manual session with 5 or 6 real people is required before the HR demo.
 - Google sign-in (no `GOOGLE_CLIENT_ID`), SMTP send, real AI providers (mock only). AI suggestions in the builder, AI interpret in reports and the report happy path with a real provider are stubbed in tests.

@@ -29,6 +29,27 @@ export type Attempt = Omit<S['AttemptReport'], 'candidate' | 'badges' | 'flag_co
   }
   flag_counts: { types: Record<string, number>; severity: Record<string, number> }
   help_requests: HelpRow[]
+  /** Added by the backend next to `flag_counts`; absent on older payloads. */
+  risk?: { score: number; level: 'low' | 'medium' | 'high'; flagged: boolean }
+  /** Photo retention (added by the backend; absent on older payloads). */
+  photos_delete_after?: string | null
+  photos_purged_at?: string | null
+  photo_count?: number
+}
+
+export interface PhotoItem {
+  asset_id: string
+  taken_at: string
+  kind: 'periodic' | 'event' | 'baseline'
+  event_id: string | null
+  event_type: string | null
+  severity: string | null
+}
+
+export interface PhotoPage {
+  items: PhotoItem[]
+  next_cursor: string | null
+  total: number
 }
 
 export type Decision = 'approved' | 'rejected' | 'waiting'

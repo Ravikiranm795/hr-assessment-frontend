@@ -63,7 +63,9 @@
     "done": {
       "title": "Your report is ready",
       "body_one": "{{rows}} row was written to a {{format}} file.",
-      "body_other": "{{rows}} rows were written to a {{format}} file."
+      "body_other": "{{rows}} rows were written to a {{format}} file.",
+      "replaced": "This {{format}} file was replaced by a newer one. Generate it again to download it.",
+      "downloaded": "Downloaded"
     },
     "download": {
       "button": "Download",

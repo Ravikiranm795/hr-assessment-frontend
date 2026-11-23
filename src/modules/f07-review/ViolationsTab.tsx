@@ -14,6 +14,7 @@ import { Modal } from '@/components/Modal'
 import { Textarea } from '@/components/Textarea'
 
 const TONE = { serious: 'error', moderate: 'warning', minor: 'info', info: 'neutral' } as const
+const RISK_TONE = { low: 'success', medium: 'warning', high: 'error' } as const
 
 export function ViolationsTab({ attempt, onChanged }: { attempt: Attempt; onChanged: () => void }) {
   const { t, i18n } = useTranslation()
@@ -26,11 +27,28 @@ export function ViolationsTab({ attempt, onChanged }: { attempt: Attempt; onChan
   const sev = attempt.flag_counts.severity
   const typeText = (type: string) => (i18n.exists(`review.violations.type.${type}`) ? t(`review.violations.type.${type}`) : t('review.violations.type.unknown'))
 
-  if (total === 0) return <p className="rounded-(--radius) border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">{t('review.violations.none')}</p>
+  const risk = attempt.risk
+  const riskBadges = risk && (
+    <>
+      <Badge tone={RISK_TONE[risk.level] ?? 'neutral'}>
+        {t('review.violations.risk.label')}: {t(`review.violations.risk.${risk.level}`, { defaultValue: risk.level })} ({t('review.violations.risk.score', { score: risk.score })})
+      </Badge>
+      {risk.flagged && <Badge tone="error">{t('review.violations.risk.flagged')}</Badge>}
+    </>
+  )
+
+  if (total === 0)
+    return (
+      <div className="space-y-4">
+        {riskBadges && <div className="flex flex-wrap items-center gap-2">{riskBadges}</div>}
+        <p className="rounded-(--radius) border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">{t('review.violations.none')}</p>
+      </div>
+    )
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
+        {riskBadges}
         <p className="font-medium">{t('review.violations.summary', { count: total })}</p>
         {(['serious', 'moderate', 'minor'] as const).map((s) => (sev[s] ? <Badge key={s} tone={TONE[s]}>{t(`review.violations.${s}`, { count: sev[s] })}</Badge> : null))}
         {attempt.baseline_asset_id && (
@@ -74,7 +92,21 @@ export function ViolationsTab({ attempt, onChanged }: { attempt: Attempt; onChan
 }
 
 /** Snapshots arrive as short-lived signed URLs: fetch on open and use as returned, never build or cache (spec 8.5). */
-function SnapshotModal({ attemptId, assetId, title, onClose }: { attemptId: string; assetId: string; title: string; onClose: () => void }) {
+export function SnapshotModal({
+  attemptId,
+  assetId,
+  title,
+  onClose,
+  onPrev,
+  onNext,
+}: {
+  attemptId: string
+  assetId: string
+  title: string
+  onClose: () => void
+  onPrev?: () => void
+  onNext?: () => void
+}) {
   const { t } = useTranslation()
   const [url, setUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -83,16 +115,27 @@ function SnapshotModal({ attemptId, assetId, title, onClose }: { attemptId: stri
     onSuccess: (d) => setUrl(d.url),
     onError: (e) => setError(applyServerMessage(e)),
   })
-  // Fetch the signed URL once when the modal opens.
-  useEffect(() => {
+  const reload = () => {
+    setUrl(null)
+    setError(null)
     load.mutate()
+  }
+  // Fetch a fresh signed URL when the modal opens or the asset changes (prev/next).
+  useEffect(() => {
+    reload()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [assetId])
   return (
     <Modal open onOpenChange={(open) => !open && onClose()} title={t('review.violations.snapshotTitle') + ': ' + title} wide>
       {!url && !error && <Spinner label={t('common.loading')} />}
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
-      {url && <img src={url} alt={t('review.violations.snapshotAlt')} className="mx-auto max-h-[70vh] rounded-(--radius)" />}
+      {url && <img src={url} alt={t('review.violations.snapshotAlt')} onError={reload} className="mx-auto max-h-[70vh] rounded-(--radius)" />}
+      {(onPrev || onNext) && (
+        <div className="mt-3 flex justify-between gap-2">
+          <Button variant="outline" size="sm" onClick={onPrev} disabled={!onPrev}>{t('review.photos.prev')}</Button>
+          <Button variant="outline" size="sm" onClick={onNext} disabled={!onNext}>{t('review.photos.next')}</Button>
+        </div>
+      )}
     </Modal>
   )
 }

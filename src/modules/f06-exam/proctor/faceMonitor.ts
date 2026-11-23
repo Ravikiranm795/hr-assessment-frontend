@@ -15,6 +15,8 @@ export interface FaceSample {
   count: number
   /** Horizontal head turn estimate for a single face; null when there is not exactly one face. */
   yaw: number | null
+  /** Face bounding box in video pixels for a single face; used to crop for the identity check. */
+  box?: { x: number; y: number; width: number; height: number }
 }
 
 let detectorPromise: Promise<FaceDetector | null> | null = null
@@ -42,11 +44,13 @@ export function sampleFaces(detector: FaceDetector, video: HTMLVideoElement): Fa
   try {
     const { detections } = detector.detectForVideo(video, performance.now())
     if (detections.length !== 1) return { count: detections.length, yaw: null }
+    const bb = detections[0].boundingBox
+    const box = bb ? { x: bb.originX, y: bb.originY, width: bb.width, height: bb.height } : undefined
     const [rightEye, leftEye, nose] = detections[0].keypoints ?? []
-    if (!rightEye || !leftEye || !nose) return { count: 1, yaw: null }
+    if (!rightEye || !leftEye || !nose) return { count: 1, yaw: null, box }
     const eyeDistance = Math.abs(leftEye.x - rightEye.x)
-    if (eyeDistance < 0.01) return { count: 1, yaw: null }
-    return { count: 1, yaw: (nose.x - (rightEye.x + leftEye.x) / 2) / eyeDistance }
+    if (eyeDistance < 0.01) return { count: 1, yaw: null, box }
+    return { count: 1, yaw: (nose.x - (rightEye.x + leftEye.x) / 2) / eyeDistance, box }
   } catch {
     return null
   }
