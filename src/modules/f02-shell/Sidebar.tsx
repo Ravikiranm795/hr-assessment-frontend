@@ -21,7 +21,7 @@ export function Sidebar({ items, role, rail, section }: SidebarProps) {
   const { pathname } = useLocation()
 
   return (
-    <aside className={cn('nav-scope flex shrink-0 flex-col border-r border-border', rail ? 'w-16' : 'w-60')}>
+    <aside className={cn('side-scope flex shrink-0 flex-col border-r border-border', rail ? 'w-16' : 'w-60')}>
       {rail && (
         // The hamburger closes the submenu panel and returns to the main page (spec F-07).
         <button

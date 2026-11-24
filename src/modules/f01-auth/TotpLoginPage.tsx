@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
@@ -21,7 +21,15 @@ export function TotpLoginPage() {
   const { t } = useTranslation()
   const { completeLogin } = useAuth()
   const navigate = useNavigate()
-  const state = (useLocation().state ?? {}) as LocationState
+  const location = useLocation()
+  const state = (location.state ?? {}) as LocationState
+  // After single sign-on the challenge arrives in the URL fragment (never sent to a server or logged).
+  // Keep it in memory and clear it from the address bar.
+  const [fragmentToken] = useState(() => new URLSearchParams(window.location.hash.replace(/^#/, '')).get('totp_token'))
+  const totpToken = state.totpToken ?? fragmentToken ?? undefined
+  useEffect(() => {
+    if (window.location.hash) window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search)
+  }, [])
   const [banner, setBanner] = useState<string | null>(null)
   const {
     register,
@@ -30,14 +38,14 @@ export function TotpLoginPage() {
   } = useForm<{ code: string }>()
 
   // The challenge token is held in router state only; a refresh loses it and sends the user back.
-  if (!state.totpToken) return <Navigate to="/login" replace />
+  if (!totpToken) return <Navigate to="/login" replace />
 
   async function onSubmit({ code }: { code: string }) {
     setBanner(null)
     try {
       const session = await api.post<SessionOut>(
         '/api/v1/auth/login/totp',
-        { totp_token: state.totpToken, code: code.trim() },
+        { totp_token: totpToken, code: code.trim() },
         { skipRefresh: true },
       )
       await completeLogin(session)

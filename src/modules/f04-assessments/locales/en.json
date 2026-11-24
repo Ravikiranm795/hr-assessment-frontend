@@ -15,7 +15,8 @@
       "multi_choice": "Multiple choice",
       "fill_blank": "Fill in the blanks",
       "code_gap": "Code gap",
-      "short_answer": "Short answer"
+      "short_answer": "Short answer",
+      "code_write": "Coding question"
     },
     "scoring": {
       "auto": "Automatic",
@@ -45,6 +46,9 @@
       "multiple_correct_options": "A single choice question can have only one correct option.",
       "no_blanks": "Add at least one blank.",
       "blank_without_answers": "Every blank needs at least one accepted answer.",
+      "no_samples": "Add at least one sample case with an expected output.",
+      "no_languages": "Pick at least one allowed language.",
+      "duration_missing": "Set the time for this coding question (5 to 120 minutes).",
       "unknown": "This question is not ready to publish."
     },
     "list": {
@@ -206,8 +210,34 @@
       "noQuestions": "This version has no questions yet.",
       "questionNo": "Question {{n}}",
       "marks": "{{marks}} marks",
+      "codeMeta": "{{minutes}} min, not scored",
+      "languages": "Languages: {{list}}",
       "blankNo": "Answer {{n}}",
       "yourAnswer": "Your answer"
+    },
+    "code": {
+      "noMarks": "Coding questions have no marks. They are a separate timed section and do not count toward the score.",
+      "minutes": "Time in minutes",
+      "minutesHint": "Between {{min}} and {{max}} minutes for this question.",
+      "languages": "Allowed languages",
+      "languagesHint": "The candidate can write in any language ticked here. Pick at least one.",
+      "defaultLanguage": "Default language",
+      "samples": "Sample cases",
+      "samplesHint": "Visible to the candidate, who can run their code against them. 1 to {{max}} cases. The input is sent to the program and the output is compared with the expected output.",
+      "sampleInput": "Sample {{n}} input",
+      "sampleExpected": "Sample {{n}} expected output",
+      "addSample": "Add sample case",
+      "removeSample": "Remove sample {{n}}",
+      "starter": "Starter code",
+      "starterHint": "Optional code the candidate starts with, shown in the default language.",
+      "aiReview": "AI review",
+      "aiReviewHint": "When on, an AI gives reviewers a correctness percentage and a summary after submission. The AI percentage and the human verdict are advice for reviewers only and never change marks or the result.",
+      "keyPoints": "Hints for the AI reviewer (one per line)",
+      "keyPointsHint": "What a good solution should do. The candidate never sees these.",
+      "modelAnswer": "Reference solution (optional)",
+      "listSummary": "{{minutes}} min, does not count toward the score",
+      "includesCoding_one": "Includes coding ({{count}} question)",
+      "includesCoding_other": "Includes coding ({{count}} questions)"
     },
     "ai": {
       "open": "AI suggestions",

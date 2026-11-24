@@ -1,4 +1,4 @@
-import { FilesetResolver, ImageEmbedder, type Embedding } from '@mediapipe/tasks-vision'
+import type { Embedding, ImageEmbedder } from '@mediapipe/tasks-vision'
 import type { ExamEventType } from '../types'
 import type { FaceSample } from './faceMonitor'
 
@@ -20,10 +20,14 @@ const REFERENCE_MAX_YAW = 0.3 // the reference frame must be facing the camera
 type Report = (type: ExamEventType, extra?: { durationMs?: number; meta?: Record<string, unknown> }) => void
 
 let embedderPromise: Promise<ImageEmbedder | null> | null = null
+// The library loads on demand; `tick` only runs once an embedder exists, so this is set by then.
+let embedderClass: typeof ImageEmbedder | null = null
 
 export function loadFaceEmbedder(): Promise<ImageEmbedder | null> {
   embedderPromise ??= (async () => {
     try {
+      const { FilesetResolver, ImageEmbedder } = await import('@mediapipe/tasks-vision')
+      embedderClass = ImageEmbedder
       const fileset = await FilesetResolver.forVisionTasks(WASM_PATH)
       return await ImageEmbedder.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: MODEL_PATH, delegate: 'CPU' },
@@ -83,7 +87,8 @@ export class FaceMatchWatch {
         this.reference = embedding
         return
       }
-      const similarity = ImageEmbedder.cosineSimilarity(this.reference, embedding)
+      if (!embedderClass) return
+      const similarity = embedderClass.cosineSimilarity(this.reference, embedding)
       this.run = similarity < FACE_MISMATCH_THRESHOLD ? this.run + 1 : 0
       if (this.run >= MISMATCH_SAMPLES && now - this.last >= MISMATCH_COOLDOWN_MS) {
         this.last = now

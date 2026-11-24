@@ -32,6 +32,11 @@ export function VersionBar({ assessment, version, canEdit, creating, problem, on
           {t('assessments.version.current', { n: version.version_no, count: versions.length, max: MAX_VERSIONS })}
         </h2>
         <Badge tone={published ? 'success' : 'warning'}>{t(published ? 'assessments.status.published' : 'assessments.status.draft')}</Badge>
+        {versions.find((v) => v.id === version.id)?.has_code && (
+          <Badge tone="info">
+            {t('assessments.code.includesCoding', { count: versions.find((v) => v.id === version.id)?.code_question_count ?? 0 })}
+          </Badge>
+        )}
         <nav aria-label={t('assessments.version.switch')} className="flex flex-wrap gap-2">
           {versions.map((v) =>
             v.id === version.id ? (

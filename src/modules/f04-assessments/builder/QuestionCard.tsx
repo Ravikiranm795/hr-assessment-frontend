@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/Badge'
 import { Button } from '@/components/Button'
 import { Textarea } from '@/components/Textarea'
+import i18n from '@/core/i18n'
 import { cn } from '@/core/utils'
-import { ALLOWED_SCORING } from '../api'
+import { allowedScoring } from '../api'
 import { RichTextEditor } from '../ui/RichTextEditor'
 import { SelectField } from '../ui/controls'
+import { CodeQuestionFields } from './CodeQuestionFields'
 import { CODE_LANGUAGES, questionIssues, uid, type DraftQuestion } from './model'
 
 interface QuestionCardProps {
@@ -29,7 +31,9 @@ export function QuestionCard({ q, index, readOnly, showProblems, aiScoring, onPa
   const gapLike = q.type === 'fill_blank' || q.type === 'code_gap'
   const mono = q.type === 'code_gap'
   const showModelAnswer = q.type === 'short_answer' || (q.type === 'code_gap' && q.scoring_mode !== 'auto')
-  const scoringOptions = ALLOWED_SCORING[q.type].filter((m) => m !== 'ai' || aiScoring || q.scoring_mode === 'ai')
+  const isCode = q.type === 'code_write'
+  const scoringOptions = allowedScoring(q.type).filter((m) => m !== 'ai' || aiScoring || q.scoring_mode === 'ai')
+  const typeLabelKey = `assessments.question_type.${q.type}`
 
   return (
     <section
@@ -49,8 +53,14 @@ export function QuestionCard({ q, index, readOnly, showProblems, aiScoring, onPa
           </button>
         )}
         <h3 className="text-sm font-semibold">{t('assessments.question.label', { n: index + 1 })}</h3>
-        <Badge tone="info">{t(`assessments.question_type.${q.type}`)}</Badge>
+        <Badge tone="info">{i18n.exists(typeLabelKey) ? t(typeLabelKey) : q.type}</Badge>
+        {isCode && (
+          <span className="text-xs text-muted" data-testid="code-summary">
+            {t('assessments.code.listSummary', { minutes: Number(q.duration) || 0 })}
+          </span>
+        )}
         <div className="ml-auto flex flex-wrap items-end gap-3">
+          {!isCode && (
           <label className="space-y-1 text-xs font-medium">
             <span className="block">{t('assessments.question.marks')}</span>
             <input
@@ -64,6 +74,8 @@ export function QuestionCard({ q, index, readOnly, showProblems, aiScoring, onPa
               className={cn('h-9 w-20 rounded-(--radius) border bg-surface px-2 text-sm disabled:bg-bg', issues.includes('marks_invalid') ? 'border-error' : 'border-border')}
             />
           </label>
+          )}
+          {!isCode && (
           <SelectField
             label={t('assessments.question.scoring')}
             value={q.scoring_mode}
@@ -77,6 +89,7 @@ export function QuestionCard({ q, index, readOnly, showProblems, aiScoring, onPa
               </option>
             ))}
           </SelectField>
+          )}
           {!readOnly && (
             <Button variant="ghost" size="sm" onClick={onRemove} aria-label={t('assessments.question.remove', { n: index + 1 })}>
               {t('assessments.question.removeShort')}
@@ -95,6 +108,7 @@ export function QuestionCard({ q, index, readOnly, showProblems, aiScoring, onPa
       />
 
       <div className="mt-4 space-y-3">
+        {isCode && <CodeQuestionFields q={q} readOnly={readOnly} issues={issues} onPatch={onPatch} />}
         {choice && (
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">{t('assessments.question.options')}</legend>

@@ -10,8 +10,20 @@ Status: ALL PLANNED MODULES BUILT (2026-11-17). Remaining work is verification w
 ## 2026-11-23 proctoring hardening (frontend)
 Added app-switch/PrintScreen/selection/multi-monitor/devtools/remote-desktop/phone/face-mismatch detectors, 10 s heartbeat with session id and lost-connection banner, non-blocking fullscreen banner (no more lock overlay), review risk badge. Models in `public/mediapipe/` (efficientdet_lite0, mobilenet_v3_small). Not manually tested with a real camera; face match and phone thresholds need tuning.
 
+## 2026-11-23 colour combinations
+Branding: 11 `COLOR_COMBOS` (core/branding.ts) replace the theme pickers; custom bg now derives surface/border/muted (`surfaceTokens`); old page/nav tables kept as LEGACY for saved keys; all pairs AA-checked, typecheck/lint/i18n pass, not visually checked.
+
 ## 2026-11-23 proof photos
 Exam snapshots every 15 s (clamped 10-15 s, drop-not-retry); review Photos tab with lazy thumbnails, violations filter, prev/next modal, retention banner and "Delete photos now" (needs backend `/photos`, `/photos/delete`); typecheck/lint only, not run against the real backend.
+
+## 2026-11-23 AI summary tab
+Review page "AI summary" tab (`f07-review/AiSummaryTab.tsx`, `aiSummaryApi.ts`): GET/POST `/attempts/{id}/ai-summary`, generate/regenerate, stale notice, violation highlights; no photos, no recommendation; typecheck/lint only, needs backend endpoint.
+
+## 2026-11-23 org-level theme and favicon
+Page theme, nav theme and background colour now come from the server (`BrandingOut`), applied in AppShell and ExamPage; favicon falls back to the default on null/reset/sign-out (`core/theme.ts`); localStorage only migrates legacy values once on the Branding settings page; typecheck/lint only, needs the backend fields.
+
+## 2026-11-23 branding colour controls
+Separate side/top nav colours and text colours, page text colour, background as a hex ColorField (shared `ColorField` in f11-settings/common.tsx with live AA check); tokens `--side-*`/`--top-*` (`.side-scope`/`.top-scope`, `--nav-*` kept as aliases of side); typecheck/lint only, needs the backend fields.
 
 ## What is NOT proven (needs real services or people)
 - **Real face detection** (MediaPipe no-face, multiple faces, looking away): Playwright uses a fake camera with no face. A manual session with 5 or 6 real people is required before the HR demo.

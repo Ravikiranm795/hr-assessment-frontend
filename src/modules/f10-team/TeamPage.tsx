@@ -63,7 +63,7 @@ export function TeamPage() {
       header: t('team.columns.actions'),
       className: 'w-28 text-right',
       cell: (u) =>
-        u.role === 'hr_user' ? (
+        u.role === 'hr_user' || u.role === 'engineer' ? (
           <RowActions user={u} onChanged={refresh} onDeactivate={setDeactivating} onTempPassword={(name, password) => setTemp({ name, password })} />
         ) : (
           <span className="text-xs text-muted" title={t('team.readOnlyHint')}>

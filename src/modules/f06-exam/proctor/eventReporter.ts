@@ -35,6 +35,8 @@ const PROOF_TYPES = new Set<ExamEventType>([
   'multi_monitor',
   'devtools_suspected',
   'app_switch_shortcut',
+  'no_face',
+  'looking_away',
 ])
 const MAX_PENDING_FRAMES = 20
 
@@ -48,6 +50,8 @@ export class EventReporter {
   /** A frame is taken when the event happens; it is uploaded only if the server rates the event serious. */
   private frames = new WeakMap<ExamEvent, Promise<Blob | null>>()
   private pendingFrames = 0
+  private running: Promise<void> | null = null
+  private uploads = new Set<Promise<void>>()
   private frameProvider: (() => Promise<Blob | null>) | null = null
   private timer: ReturnType<typeof setInterval> | null = null
   private sending = false
@@ -70,7 +74,11 @@ export class EventReporter {
     this.frameProvider = provider
   }
 
-  report(type: ExamEventType, extra: { durationMs?: number; meta?: Record<string, unknown> } = {}) {
+  /** `frame` is a frame taken earlier (the start of a spell); it wins over the frame provider. */
+  report(
+    type: ExamEventType,
+    extra: { durationMs?: number; meta?: Record<string, unknown>; frame?: Promise<Blob | null> } = {},
+  ) {
     if (this.stopped) return
     if (BURST_TYPES.has(type)) {
       const now = performance.now()
@@ -81,17 +89,42 @@ export class EventReporter {
     const event: ExamEvent = { type, occurred_at: new Date().toISOString() }
     if (extra.durationMs !== undefined) event.duration_ms = Math.max(0, Math.round(extra.durationMs))
     if (extra.meta) event.meta = extra.meta
-    if (this.frameProvider && PROOF_TYPES.has(type) && this.pendingFrames < MAX_PENDING_FRAMES) {
-      this.frames.set(event, this.frameProvider().catch(() => null))
-      this.pendingFrames += 1
+    if (this.pendingFrames < MAX_PENDING_FRAMES) {
+      if (extra.frame) {
+        this.frames.set(event, extra.frame.catch(() => null))
+        this.pendingFrames += 1
+      } else if (this.frameProvider && PROOF_TYPES.has(type)) {
+        this.frames.set(event, this.frameProvider().catch(() => null))
+        this.pendingFrames += 1
+      }
     }
     this.queue.push(event)
     if (this.queue.length > QUEUE_MAX) this.queue.splice(0, this.queue.length - QUEUE_MAX)
     if (this.queue.length >= BATCH_MAX) void this.flush()
   }
 
-  /** `keepalive` lets the request outlive the page; it cannot be awaited reliably, so it is fire-and-forget. */
-  async flush(keepalive = false) {
+  /**
+   * `keepalive` lets the request outlive the page; it cannot be awaited reliably, so it is fire-and-forget.
+   * `waitForProofs` is for the moment just before submit: the exam must still be running when a proof photo
+   * is attached, so wait for the send in progress, send what is queued and wait for every proof upload.
+   */
+  async flush(keepalive = false, waitForProofs = false) {
+    if (waitForProofs) {
+      if (this.running) await this.running.catch(() => undefined)
+      await this.run(false)
+      await Promise.allSettled([...this.uploads])
+      return
+    }
+    const current = this.run(keepalive)
+    this.running = current
+    try {
+      await current
+    } finally {
+      if (this.running === current) this.running = null
+    }
+  }
+
+  private async run(keepalive: boolean) {
     if (this.sending && !keepalive) return
     while (this.queue.length > 0) {
       const batch = this.queue.splice(0, BATCH_MAX)
@@ -99,7 +132,12 @@ export class EventReporter {
       try {
         const result = await examApi.events(batch, keepalive)
         this.pendingFrames = Math.max(0, this.pendingFrames - batch.filter((e) => this.frames.has(e)).length)
-        for (const item of result.serious ?? []) void this.uploadProof(batch[item.index], item.event_id)
+        // `events` lists every accepted event; an older server only returns `serious`.
+        for (const item of result.events ?? result.serious ?? []) {
+          const upload = this.uploadProof(batch[item.index], item.event_id)
+          this.uploads.add(upload)
+          void upload.finally(() => this.uploads.delete(upload))
+        }
       } catch (error) {
         // The network or server failed: keep the batch for the next tick. Anything else (the exam is not
         // running, the session ended) cannot succeed later, so the batch is dropped.

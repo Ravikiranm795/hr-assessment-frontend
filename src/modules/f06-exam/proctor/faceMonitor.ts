@@ -1,4 +1,4 @@
-import { FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision'
+import type { FaceDetector } from '@mediapipe/tasks-vision'
 import type { ExamEventType } from '../types'
 
 // Everything is self-hosted under /public/mediapipe: no CDN at runtime.
@@ -25,6 +25,7 @@ let detectorPromise: Promise<FaceDetector | null> | null = null
 export function loadFaceDetector(): Promise<FaceDetector | null> {
   detectorPromise ??= (async () => {
     try {
+      const { FaceDetector, FilesetResolver } = await import('@mediapipe/tasks-vision')
       const fileset = await FilesetResolver.forVisionTasks(WASM_PATH)
       return await FaceDetector.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: MODEL_PATH, delegate: 'CPU' },
@@ -56,25 +57,36 @@ export function sampleFaces(detector: FaceDetector, video: HTMLVideoElement): Fa
   }
 }
 
-type Report = (type: ExamEventType, extra?: { durationMs?: number; meta?: Record<string, unknown> }) => void
+type Report = (
+  type: ExamEventType,
+  extra?: { durationMs?: number; meta?: Record<string, unknown>; frame?: Promise<Blob | null> },
+) => void
+type CaptureNow = () => Promise<Blob | null>
 
 /** A condition that must hold for a while before it counts, reported with its duration. */
 class Spell {
   private startedAt: number | null = null
   private reportedUntil = 0
+  private frame: Promise<Blob | null> | undefined
   private readonly type: ExamEventType
   private readonly report: Report
+  private readonly captureNow?: CaptureNow
 
-  constructor(type: ExamEventType, report: Report) {
+  constructor(type: ExamEventType, report: Report, captureNow?: CaptureNow) {
     this.type = type
     this.report = report
+    this.captureNow = captureNow
   }
 
   update(on: boolean, now: number) {
     if (on) {
-      this.startedAt ??= now
+      if (this.startedAt === null) {
+        this.startedAt = now
+        // The proof is the moment it began: by the time 3 s have passed the person may be back.
+        this.frame = this.captureNow?.().catch(() => null)
+      }
       const from = Math.max(this.startedAt, this.reportedUntil)
-      if (now - this.startedAt >= MIN_SPELL_MS && now - from >= INTERIM_MS) this.emit(now)
+      if (now - this.startedAt >= MIN_SPELL_MS && now - from >= INTERIM_MS) this.emit(now, true)
     } else {
       this.end(now)
     }
@@ -84,15 +96,19 @@ class Spell {
     if (this.startedAt !== null) {
       const from = Math.max(this.startedAt, this.reportedUntil)
       const qualifies = now - this.startedAt >= MIN_SPELL_MS
-      if (qualifies && (this.reportedUntil === 0 || now - from >= MIN_SPELL_MS)) this.emit(now)
+      if (qualifies && (this.reportedUntil === 0 || now - from >= MIN_SPELL_MS)) this.emit(now, false)
     }
     this.startedAt = null
     this.reportedUntil = 0
+    this.frame = undefined
   }
 
-  private emit(now: number) {
+  private emit(now: number, stillOn: boolean) {
     const from = Math.max(this.startedAt ?? now, this.reportedUntil)
-    this.report(this.type, { durationMs: now - from })
+    // First piece: the start frame. Later pieces: a fresh frame while the condition still holds; when the
+    // spell has just ended there is nothing fresh to show, so the previous piece's frame is reused.
+    if (this.reportedUntil !== 0 && stillOn && this.captureNow) this.frame = this.captureNow().catch(() => null)
+    this.report(this.type, { durationMs: now - from, ...(this.frame ? { frame: this.frame } : {}) })
     this.reportedUntil = now
   }
 }
@@ -105,10 +121,10 @@ export class FaceWatch {
   private lastMulti = -Infinity
   private readonly report: Report
 
-  constructor(report: Report) {
+  constructor(report: Report, captureNow?: CaptureNow) {
     this.report = report
-    this.noFace = new Spell('no_face', report)
-    this.away = new Spell('looking_away', report)
+    this.noFace = new Spell('no_face', report, captureNow)
+    this.away = new Spell('looking_away', report, captureNow)
   }
 
   tick(sample: FaceSample, now = performance.now()) {

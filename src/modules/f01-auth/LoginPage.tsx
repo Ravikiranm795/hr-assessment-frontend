@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
 import { Button } from '@/components/Button'
 import { Field } from '@/components/Field'
@@ -33,15 +33,55 @@ export function LoginPage() {
   const { status, completeLogin } = useAuth()
   const navigate = useNavigate()
   const returnPath = useReturnPath()
-  const [banner, setBanner] = useState<string | null>(null)
+  const [params] = useSearchParams()
+  const ssoError = params.get('sso_error')
+  const [banner, setBanner] = useState<string | null>(
+    ssoError ? t(`ssoLogin.error.${ssoError === 'expired' || ssoError === 'unavailable' ? ssoError : 'failed'}`) : null,
+  )
+  const [sso, setSso] = useState<{ email: string; provider: string | null; required: boolean } | null>(null)
+  const [ssoBusy, setSsoBusy] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const {
     register,
     handleSubmit,
     setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<Values>({ resolver: zodResolver(schema) })
+  const emailField = register('email')
 
   if (status === 'authenticated') return <Navigate to={returnPath} replace />
+
+  /** Ask which sign-in the email's domain uses. The answer only says whether SSO exists for the domain. */
+  async function discover(raw: string) {
+    const email = raw.trim()
+    if (!email.includes('@') || sso?.email === email) return
+    try {
+      const r = await api.post<{ sso: boolean; provider: string | null; sso_required: boolean }>('/api/v1/auth/sso/discover', { email }, { skipRefresh: true })
+      if (getValues('email').trim() !== email) return
+      setSso(r.sso ? { email, provider: r.provider, required: r.sso_required } : null)
+      setShowPassword(false)
+    } catch {
+      // Discovery is optional: on any failure the normal password form stays in place.
+      setSso(null)
+    }
+  }
+
+  async function startSso() {
+    const email = getValues('email').trim()
+    setBanner(null)
+    setSsoBusy(true)
+    try {
+      const r = await api.post<{ authorize_url: string }>('/api/v1/auth/sso/start', { email }, { skipRefresh: true })
+      window.location.assign(r.authorize_url)
+    } catch (error) {
+      setSsoBusy(false)
+      setBanner(error instanceof ApiError && error.is('RATE_LIMITED') ? errorText(error) : t('ssoLogin.error.unavailable'))
+    }
+  }
+
+  const providerName = sso ? t(`ssoLogin.provider.${sso.provider === 'google' || sso.provider === 'microsoft' ? sso.provider : 'oidc'}`) : ''
+  const passwordVisible = !sso || !sso.required || showPassword
 
   /** One path for password and Google sign-in: second factor, then setup, then the app. */
   async function finish(session: SessionOut) {
@@ -90,19 +130,48 @@ export function LoginPage() {
           autoComplete="username"
           placeholder={t('login.form.email.placeholder')}
           error={errors.email && t('fieldErrors.required')}
-          {...register('email')}
+          {...emailField}
+          onChange={(e) => {
+            void emailField.onChange(e)
+            if (sso && sso.email !== e.target.value.trim()) setSso(null)
+          }}
+          onBlur={(e) => {
+            void emailField.onBlur(e)
+            void discover(e.target.value)
+          }}
         />
-        <Field
-          label={t('login.form.password.label')}
-          type="password"
-          autoComplete="current-password"
-          placeholder={t('login.form.password.placeholder')}
-          error={errors.password && t('fieldErrors.required')}
-          {...register('password')}
-        />
-        <Button type="submit" className="w-full" loading={isSubmitting}>
-          {t('login.form.submit')}
-        </Button>
+        {sso && (
+          <div className="space-y-2">
+            <Button type="button" className="w-full" loading={ssoBusy} onClick={() => void startSso()}>
+              {t('ssoLogin.continue', { provider: providerName })}
+            </Button>
+            {sso.required ? (
+              <p className="text-xs text-muted">{t('ssoLogin.requiredHint')}</p>
+            ) : (
+              <p className="text-center text-xs text-muted">{t('ssoLogin.orPassword')}</p>
+            )}
+            {sso.required && !showPassword && (
+              <button type="button" className="block w-full text-center text-sm text-primary underline" onClick={() => setShowPassword(true)}>
+                {t('ssoLogin.usePassword')}
+              </button>
+            )}
+          </div>
+        )}
+        {passwordVisible && (
+          <>
+            <Field
+              label={t('login.form.password.label')}
+              type="password"
+              autoComplete="current-password"
+              placeholder={t('login.form.password.placeholder')}
+              error={errors.password && t('fieldErrors.required')}
+              {...register('password')}
+            />
+            <Button type="submit" variant={sso ? 'outline' : 'primary'} className="w-full" loading={isSubmitting}>
+              {sso ? t('ssoLogin.signInWithPassword') : t('login.form.submit')}
+            </Button>
+          </>
+        )}
       </form>
       <GoogleButton onToken={onGoogle} />
     </AuthLayout>

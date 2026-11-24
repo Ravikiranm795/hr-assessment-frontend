@@ -15,12 +15,23 @@
   --color-text-muted: #4b5d73;
   --color-border: #d5e3e0;
   --color-highlight: #12d9b5;
-  /* Side and top navigation theme (Branding settings). Defaults follow the page tokens. */
-  --nav-bg: var(--color-surface);
-  --nav-text: var(--color-text);
-  --nav-muted: var(--color-text-muted);
-  --nav-border: var(--color-border);
-  --nav-hover: var(--color-bg);
+  /* Side and top navigation themes (Branding settings), set separately. Defaults follow the page tokens. */
+  --side-bg: var(--color-surface);
+  --side-text: var(--color-text);
+  --side-muted: var(--color-text-muted);
+  --side-border: var(--color-border);
+  --side-hover: var(--color-bg);
+  --top-bg: var(--color-surface);
+  --top-text: var(--color-text);
+  --top-muted: var(--color-text-muted);
+  --top-border: var(--color-border);
+  --top-hover: var(--color-bg);
+  /* Legacy aliases of the side tokens. */
+  --nav-bg: var(--side-bg);
+  --nav-text: var(--side-text);
+  --nav-muted: var(--side-muted);
+  --nav-border: var(--side-border);
+  --nav-hover: var(--side-hover);
   --radius: 0.75rem;
   --shadow: 0 1px 2px rgb(12 35 64 / 0.06), 0 4px 12px rgb(12 35 64 / 0.06);
   --font-sans: 'Inter Variable', system-ui, sans-serif;
@@ -52,14 +63,22 @@
   --font-mono: var(--font-mono);
 }
 
-/* Side bar, submenu panel and top bar: re-point the text, border and hover tokens to the nav theme. */
-.nav-scope {
-  background: var(--nav-bg);
-  color: var(--nav-text);
-  --color-text: var(--nav-text);
-  --color-text-muted: var(--nav-muted); /* `text-muted` resolves to this token, see @theme above */
-  --color-border: var(--nav-border);
-  --color-bg: var(--nav-hover);
+/* Side bar and submenu panel (.side-scope) and top bar (.top-scope): re-point the text, border and hover tokens. */
+.side-scope {
+  background: var(--side-bg);
+  color: var(--side-text);
+  --color-text: var(--side-text);
+  --color-text-muted: var(--side-muted); /* `text-muted` resolves to this token, see @theme above */
+  --color-border: var(--side-border);
+  --color-bg: var(--side-hover);
+}
+.top-scope {
+  background: var(--top-bg);
+  color: var(--top-text);
+  --color-text: var(--top-text);
+  --color-text-muted: var(--top-muted);
+  --color-border: var(--top-border);
+  --color-bg: var(--top-hover);
 }
 
 html,

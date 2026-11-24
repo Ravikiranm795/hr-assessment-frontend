@@ -1,6 +1,8 @@
 import type { RouteObject } from 'react-router-dom'
 import { RequireAccess } from '@/core/auth/guards'
-import { TeamPage } from './TeamPage'
+import { lazyNamed } from '@/app/lazyNamed'
+
+const TeamPage = lazyNamed(() => import('./TeamPage'), 'TeamPage')
 
 export const shellRoutes: RouteObject[] = [
   {

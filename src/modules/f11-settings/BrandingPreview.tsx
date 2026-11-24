@@ -1,7 +1,7 @@
 import { Briefcase, ClipboardList, FileText, LayoutDashboard, LifeBuoy, Settings, UserCircle } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
-import { navTokens, pageTokens } from '@/core/branding'
+import { barTokens, isHex, pageTextTokens, pageTokens, surfaceTokens, type BarInput } from '@/core/branding'
 
 export interface PreviewTheme {
   primary: string
@@ -10,7 +10,9 @@ export interface PreviewTheme {
   accentContrast: string
   background: string
   fontFamily: string
-  navTheme: string
+  side: BarInput
+  top: BarInput
+  pageText: string
   pageTheme: string
   logoUrl: string | null
   orgName: string
@@ -31,6 +33,7 @@ export function BrandingPreview({ theme }: { theme: PreviewTheme }) {
   const { t } = useTranslation()
   const style = {
     ...pageTokens(theme.pageTheme),
+    ...(!theme.pageTheme && isHex(theme.pageText) ? surfaceTokens(theme.background, theme.pageText) : {}),
     '--color-primary': theme.primary,
     '--color-primary-contrast': theme.primaryContrast,
     '--color-accent': theme.accent,
@@ -38,12 +41,14 @@ export function BrandingPreview({ theme }: { theme: PreviewTheme }) {
     '--color-bg': theme.background,
     '--font-sans': theme.fontFamily,
     fontFamily: theme.fontFamily,
-    ...navTokens(theme.navTheme),
+    ...(!theme.pageTheme && isHex(theme.pageText) ? {} : pageTextTokens(theme.pageText)),
+    ...barTokens('side', theme.side, true),
+    ...barTokens('top', theme.top, true),
   } as CSSProperties
 
   return (
     <div style={style} className="flex h-[26rem] overflow-hidden rounded-(--radius) border border-border bg-bg text-text" aria-label={t('settings.branding.preview')} role="img">
-      <aside className="nav-scope flex w-36 shrink-0 flex-col gap-1 border-r border-border p-2">
+      <aside className="side-scope flex w-36 shrink-0 flex-col gap-1 border-r border-border p-2">
         {NAV.map(({ key, icon: Icon }, i) => (
           <span
             key={key}
@@ -55,7 +60,7 @@ export function BrandingPreview({ theme }: { theme: PreviewTheme }) {
         ))}
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="nav-scope flex h-9 shrink-0 items-center justify-between border-b border-border px-3 text-[11px]">
+        <header className="top-scope flex h-9 shrink-0 items-center justify-between border-b border-border px-3 text-[11px]">
           <span className="flex items-center gap-2 font-semibold">
             {theme.logoUrl && <img src={theme.logoUrl} alt="" className="h-4 w-auto" />}
             {theme.orgName}

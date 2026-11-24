@@ -8,8 +8,10 @@ import { Spinner } from '@/components/Spinner'
 import { StatePage } from '@/components/StatePage'
 import { api } from '@/core/api/client'
 import { ApiError } from '@/core/api/errors'
+import { AiSummaryTab } from './AiSummaryTab'
 import { AnswersTab } from './AnswersTab'
 import { AttemptActions } from './AttemptActions'
+import { CodeTab } from './CodeTab'
 import { DecisionPanel } from './DecisionPanel'
 import { HistoryTab } from './HistoryTab'
 import { ScoreCard } from './ScoreCard'
@@ -44,7 +46,8 @@ export function ReviewPage() {
   if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
 
   const a = query.data
-  const helpApproved = a.help_requests.some((h) => h.status === 'approved')
+  const hasCode = (a.code_sections?.length ?? 0) > 0
+  const helpApproved =a.help_requests.some((h) => h.status === 'approved')
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -76,13 +79,17 @@ export function ReviewPage() {
       <Tabs.Root defaultValue="answers">
         <Tabs.List className="flex gap-1 border-b border-border" aria-label={t('review.title')}>
           <Tabs.Trigger value="answers" className={TAB}>{t('review.tabs.answers')}</Tabs.Trigger>
+          {hasCode && <Tabs.Trigger value="code" className={TAB}>{t('review.tabs.code')}</Tabs.Trigger>}
           <Tabs.Trigger value="violations" className={TAB}>{t('review.tabs.violations')}</Tabs.Trigger>
           <Tabs.Trigger value="photos" className={TAB}>{t('review.tabs.photos')}</Tabs.Trigger>
+          <Tabs.Trigger value="ai" className={TAB}>{t('review.tabs.aiSummary')}</Tabs.Trigger>
           <Tabs.Trigger value="history" className={TAB}>{t('review.tabs.history')}</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="answers" className="pt-4"><AnswersTab attempt={a} onChanged={refresh} /></Tabs.Content>
+        {hasCode && <Tabs.Content value="code" className="pt-4"><CodeTab attempt={a} onChanged={refresh} /></Tabs.Content>}
         <Tabs.Content value="violations" className="pt-4"><ViolationsTab attempt={a} onChanged={refresh} /></Tabs.Content>
         <Tabs.Content value="photos" className="pt-4"><PhotosTab attempt={a} onChanged={refresh} /></Tabs.Content>
+        <Tabs.Content value="ai" className="pt-4"><AiSummaryTab attempt={a} /></Tabs.Content>
         <Tabs.Content value="history" className="pt-4"><HistoryTab attempt={a} /></Tabs.Content>
       </Tabs.Root>
 

@@ -16,6 +16,10 @@ export type AnswerValue =
   | { blanks: string[] }
   | { gaps: string[] }
   | { text: string }
+  | { text: string; language: string }
+
+export type ExamSection = Schemas['SectionOut']
+export type RunResult = Schemas['RunOut']
 
 /** Event type names accepted by the backend (`severity_rules.EVENT_TYPES`). Severity is server-assigned. */
 export type ExamEventType =

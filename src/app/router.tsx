@@ -1,7 +1,10 @@
 import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 import { RequireAuth } from '@/core/auth/guards'
-import { AppShell } from '@/modules/f02-shell/AppShell'
+import { lazyNamed } from './lazyNamed'
 import { NotFound } from './pages'
+
+// The staff shell stays out of the entry chunk so a candidate on /exam/:token never downloads it.
+const AppShell = lazyNamed(() => import('@/modules/f02-shell/AppShell'), 'AppShell')
 
 // Modules plug in by exporting from `src/modules/<module>/routes.tsx`; nothing here changes per module:
 //   publicRoutes  - outside sign-in and outside the shell (/login, /exam/:token)

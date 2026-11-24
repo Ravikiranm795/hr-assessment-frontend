@@ -4,6 +4,12 @@ import type { AnswerValue, ExamEvent, ExamState, HelpReason, HelpRequest, Questi
 
 type Schemas = components['schemas']
 
+/** `events` (every accepted event) is newer than the generated types; absent on an older server. */
+type EventsOutWithAll = Omit<Schemas['EventsOut'], 'serious'> & {
+  serious?: { index: number; event_id: string }[] | null
+  events?: { index: number; event_id: string; type?: string; severity?: string }[] | null
+}
+
 // The exam session token lives in memory only and is sent as the bearer token. It never touches the
 // staff access token or the staff refresh flow (`skipRefresh`). The `exam_binding` cookie travels
 // automatically because the shared client sends `credentials: "include"`.
@@ -53,14 +59,24 @@ export const examApi = {
     return api.upload<Schemas['TimingOut']>('/api/v1/exam/session/baseline-photo', form, auth())
   },
   start: () => api.post<Schemas['TimingOut']>('/api/v1/exam/session/start', undefined, auth()),
-  questions: () => api.get<QuestionsOut>('/api/v1/exam/questions', undefined, auth()),
+  /** `section` is required for a sectioned attempt (that section must be running) and ignored otherwise. */
+  questions: (section?: string) =>
+    api.get<QuestionsOut>('/api/v1/exam/questions', section ? { section } : undefined, auth()),
+  sections: () => api.get<Schemas['SectionsOut']>('/api/v1/exam/sections', undefined, auth()),
+  enterSection: (key: string) =>
+    api.post<Schemas['SectionsOut']>(`/api/v1/exam/sections/${encodeURIComponent(key)}/enter`, undefined, auth()),
+  submitSection: (key: string) =>
+    api.post<Schemas['SectionSubmitOut']>(`/api/v1/exam/sections/${encodeURIComponent(key)}/submit`, undefined, auth()),
+  codeOptions: () => api.get<{ enabled: boolean; languages: string[] }>('/api/v1/exam/code/options', undefined, auth()),
+  /** Advisory only: the result is evidence for reviewers, never a score. */
+  runCode: (body: Schemas['RunIn']) => api.post<Schemas['RunOut']>('/api/v1/exam/code/run', body, auth()),
   saveAnswer: (questionId: string, answer: AnswerValue) =>
     api.put<Schemas['AnswerOut']>(`/api/v1/exam/answers/${questionId}`, { answer }, auth()),
   /** Also the proctoring heartbeat: the tab's session id and whether the page is visible. */
   heartbeat: (body?: { session_id: string; visible: boolean }) =>
     api.post<Schemas['HeartbeatOut'] & { ok?: boolean; server_time?: string }>('/api/v1/exam/heartbeat', body, auth()),
   events: (events: ExamEvent[], keepalive = false) =>
-    api.post<Schemas['EventsOut']>('/api/v1/exam/events', { events }, auth({ keepalive })),
+    api.post<EventsOutWithAll>('/api/v1/exam/events', { events }, auth({ keepalive })),
   /** Without `eventId` it is a periodic capture; with it, the photo is the proof attached to that event. */
   snapshot: (image: Blob, eventId?: string) => {
     const form = new FormData()

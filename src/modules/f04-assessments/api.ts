@@ -27,6 +27,7 @@ export const ALLOWED_SCORING: Record<QuestionType, ScoringMode[]> = {
   fill_blank: ['auto'],
   code_gap: ['auto', 'ai', 'manual'],
   short_answer: ['ai', 'manual'],
+  code_write: ['ai', 'manual'],
 }
 export const DEFAULT_SCORING: Record<QuestionType, ScoringMode> = {
   single_choice: 'auto',
@@ -34,6 +35,7 @@ export const DEFAULT_SCORING: Record<QuestionType, ScoringMode> = {
   fill_blank: 'auto',
   code_gap: 'auto',
   short_answer: 'manual',
+  code_write: 'ai',
 }
 export const DEFAULT_MARKS: Record<QuestionType, number> = {
   single_choice: 1,
@@ -41,7 +43,13 @@ export const DEFAULT_MARKS: Record<QuestionType, number> = {
   fill_blank: 2,
   code_gap: 2,
   short_answer: 5,
+  code_write: 0,
 }
+
+/** Safe lookups: an unknown type (newer backend) must never crash the builder. */
+export const allowedScoring = (type: string): ScoringMode[] => ALLOWED_SCORING[type as QuestionType] ?? ['manual']
+export const defaultScoring = (type: string): ScoringMode => DEFAULT_SCORING[type as QuestionType] ?? 'manual'
+export const defaultMarks = (type: string): number => DEFAULT_MARKS[type as QuestionType] ?? 1
 
 export interface Page<T> {
   items: T[]
@@ -109,9 +117,9 @@ export const assessmentsApi = {
     api.post<QuestionGenResponse>(`${base}/ai/generate`, body, { signal }),
 }
 
-/** Organization admins and HR owners edit; other HRs get a read-only view (spec F4). */
+/** Organization admins and engineers edit any assessment; HR owners edit their own, other HRs get a read-only view (spec F4). */
 export function canEditAssessment(role: string | null, userId: string | undefined, ownerId: string): boolean {
-  return role === 'org_admin' || (role === 'hr_user' && userId === ownerId)
+  return role === 'org_admin' || role === 'engineer' || (role === 'hr_user' && userId === ownerId)
 }
 
 /** Latest version = highest number; a draft always is the latest. */

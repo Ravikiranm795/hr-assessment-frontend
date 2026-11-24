@@ -29,6 +29,14 @@ export function isTerminal(error: unknown): boolean {
   return error instanceof ApiError && TERMINAL.has(error.code)
 }
 
+/** The section cannot take saves or questions any more (closed, expired, or not the running one). */
+export function isSectionGone(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    (error.code === 'SECTION_NOT_RUNNING' || error.code === 'SECTION_CLOSED' || error.code === 'SECTION_NOT_FOUND')
+  )
+}
+
 export function isAlreadySubmitted(error: unknown): boolean {
   return error instanceof ApiError && error.code === 'EXAM_ALREADY_SUBMITTED'
 }

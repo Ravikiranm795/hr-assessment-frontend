@@ -1,17 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Badge } from '@/components/Badge'
 import { Button } from '@/components/Button'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/Toast'
 import { api } from '@/core/api/client'
 import { ApiError, errorText } from '@/core/api/errors'
 import { useAuth } from '@/core/auth/AuthProvider'
-import { BACKGROUNDS, MIXED_THEMES, NAV_THEMES, PAGE_THEMES, contrastRatio, fontFamily, loadLocalBranding, navTokens, pageThemeOf, pageTokens, saveLocalBranding, type BrandingOut } from '@/core/branding'
-import { applyTheme, resetTheme } from '@/core/theme'
+import { BACKGROUNDS, COLOR_COMBOS, applyBranding, clearLegacyBranding, contrastRatio, fontFamily, matchCombo, pageThemeOf, readLegacyBranding, type BrandingOut, type ColorCombo } from '@/core/branding'
+import { resetTheme } from '@/core/theme'
 import { BrandingPreview } from './BrandingPreview'
-import { Card, Select, SettingsFrame } from './common'
+import { Card, ColorField, Select, SettingsFrame } from './common'
 
 interface Fonts {
   fonts: { key: string; label: string }[]
@@ -32,6 +31,11 @@ type Branding = BrandingOut & { logo_url: string | null; favicon_url: string | n
 
 const PATH = '/api/v1/org/branding'
 const HEX = /^#[0-9a-fA-F]{6}$/
+const AA = 4.5
+/** An optional color is fine when empty or a full hex code. */
+const okOpt = (v: string) => v === '' || HEX.test(v)
+/** A pair that has both colors must reach WCAG AA; otherwise nothing to check yet. */
+const pairOk = (bg: string, text: string) => !(HEX.test(bg) && HEX.test(text)) || contrastRatio(bg, text) >= AA
 const FAVICON_TYPES = { 'image/png': 'PNG', 'image/jpeg': 'JPG / JPEG', 'image/svg+xml': 'SVG', 'image/x-icon': 'ICO', 'image/vnd.microsoft.icon': 'ICO', 'image/webp': 'WebP' }
 const LOGO_TYPES = { 'image/png': 'PNG', 'image/jpeg': 'JPG / JPEG', 'image/svg+xml': 'SVG', 'image/webp': 'WebP' }
 
@@ -51,21 +55,37 @@ export function BrandingPage() {
   const [font, setFont] = useState('')
   const [navTheme, setNavTheme] = useState('') // '' = nothing picked yet (starter look)
   const [pageTheme, setPageTheme] = useState('')
+  const [ptext, setPtext] = useState('') // page text color
+  const [sideBg, setSideBg] = useState('') // '' = not customised
+  const [sideText, setSideText] = useState('')
+  const [topBg, setTopBg] = useState('')
+  const [topText, setTopText] = useState('')
   const [validation, setValidation] = useState<Validation | null>(null)
   const [banner, setBanner] = useState<string | null>(null)
   const [resetOpen, setResetOpen] = useState(false)
+  const [legacyFound, setLegacyFound] = useState(false)
 
   const data = query.data
   useEffect(() => {
     if (!data) return
-    const local = loadLocalBranding(orgId)
+    // One-time migration: the server has no theme yet but this browser still holds the old local one.
+    const serverHasTheme = !!(data.page_theme || data.nav_theme || data.background_color || data.side_nav_color || data.top_nav_color || data.page_text_color)
+    const legacy = serverHasTheme ? null : readLegacyBranding(orgId)
+    setLegacyFound(!!legacy)
+    const src = legacy ?? data
+    const page = src.page_theme ?? ''
     setPrimary(data.primary_color ?? '')
     setAccent(data.accent_color ?? '')
     setBgStyle(data.background_style ?? '')
-    setBg(local.background_color ?? (local.page_theme ? pageThemeOf(local.page_theme).bg : (BACKGROUNDS[data.background_style ?? ''] ?? '#f5fbfa')))
+    setBg(src.background_color ?? (page ? pageThemeOf(page).bg : (BACKGROUNDS[data.background_style ?? ''] ?? '#f5fbfa')))
     setFont(data.font_key ?? '')
-    setNavTheme(local.nav_theme ?? '')
-    setPageTheme(local.page_theme ?? '')
+    setNavTheme(src.nav_theme ?? '')
+    setPageTheme(page)
+    setPtext(data.page_text_color ?? pageThemeOf(page).text)
+    setSideBg(data.side_nav_color ?? '')
+    setSideText(data.side_nav_text_color ?? '')
+    setTopBg(data.top_nav_color ?? '')
+    setTopText(data.top_nav_text_color ?? '')
   }, [data, orgId])
 
   const refreshTheme = () => {
@@ -84,19 +104,39 @@ export function BrandingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primary, accent])
 
-  const pageText = pageThemeOf(pageTheme).text // the page text color the background has to stay readable against
+  const pageText = HEX.test(ptext) ? ptext : pageThemeOf(pageTheme).text // the page text color the background has to stay readable against
   const bgRatio = HEX.test(bg) ? contrastRatio(bg, pageText) : 0
   const bgCheck: Check | undefined = HEX.test(bg) ? { color: bg, text_color: pageText, ratio: Math.round(bgRatio * 10) / 10, minimum: 4.5, passes: bgRatio >= 4.5 } : undefined
 
   const save = useMutation({
-    mutationFn: () => api.put(PATH, { primary_color: primary, accent_color: accent, background_style: bgStyle || undefined, font_key: font || undefined }),
-    onSuccess: () => {
-      // Page background color and navigation theme have no server field yet (API_GAPS.md): kept in this browser.
+    mutationFn: () => {
+      // A custom background is sent only when it differs from the page theme / preset color; null clears it.
       const preset = BACKGROUNDS[bgStyle]
       const base = pageThemeOf(pageTheme).bg.toLowerCase()
       const custom = bg.toLowerCase() !== base && preset?.toLowerCase() !== bg.toLowerCase()
-      saveLocalBranding(orgId, { background_color: custom ? bg : undefined, page_theme: pageTheme || undefined, nav_theme: navTheme || undefined })
-      applyTheme({ ...pageTokens(pageTheme), '--color-bg': bg, ...navTokens(navTheme) })
+      return api.put<Branding | undefined>(PATH, {
+        primary_color: primary,
+        accent_color: accent,
+        background_style: bgStyle || undefined,
+        font_key: font || undefined,
+        page_theme: pageTheme || null,
+        nav_theme: navTheme || null,
+        background_color: custom ? bg : null,
+        page_text_color: ptext && ptext.toLowerCase() !== pageThemeOf(pageTheme).text.toLowerCase() ? ptext : null,
+        side_nav_color: sideBg || null,
+        side_nav_text_color: sideText || null,
+        top_nav_color: topBg || null,
+        top_nav_text_color: topText || null,
+      })
+    },
+    onSuccess: (saved) => {
+      clearLegacyBranding(orgId)
+      setLegacyFound(false)
+      // The saved organization branding drives the live theme.
+      if (saved && typeof saved === 'object' && 'primary_color' in saved) {
+        resetTheme()
+        applyBranding(saved)
+      }
       toast.success(t('settings.saved'))
       refreshTheme()
     },
@@ -105,7 +145,7 @@ export function BrandingPage() {
   const reset = useMutation({
     mutationFn: () => api.post(`${PATH}/reset`),
     onSuccess: () => {
-      saveLocalBranding(orgId, null)
+      clearLegacyBranding(orgId)
       resetTheme()
       toast.success(t('settings.branding.resetDone'))
       setResetOpen(false)
@@ -142,7 +182,26 @@ export function BrandingPage() {
     upload.mutate({ kind, file: byName === file.type ? file : new File([file], file.name, { type: byName }) })
   }
 
-  const valid = HEX.test(primary) && HEX.test(accent) && validation?.valid !== false && bgCheck?.passes === true
+  const valid =
+    HEX.test(primary) && HEX.test(accent) && validation?.valid !== false && bgCheck?.passes === true &&
+    okOpt(ptext) && okOpt(sideBg) && okOpt(sideText) && okOpt(topBg) && okOpt(topText) &&
+    pairOk(sideBg, sideText) && pairOk(topBg, topText) && pairOk(bg, ptext)
+  const clearPage = () => { setBg(pageThemeOf(pageTheme).bg); setPtext(pageThemeOf(pageTheme).text); setBgStyle('') }
+  // Picking a combination fills every colour field and clears the legacy theme keys (sent as null on save).
+  const applyCombo = (c: ColorCombo) => {
+    setPrimary(c.primary)
+    setAccent(c.accent)
+    setBg(c.bg)
+    setBgStyle('')
+    setPtext(c.text)
+    setSideBg(c.sideBg)
+    setSideText(c.sideText)
+    setTopBg(c.topBg)
+    setTopText(c.topText)
+    setPageTheme('')
+    setNavTheme('')
+  }
+  const activeCombo = pageTheme || navTheme ? undefined : matchCombo({ primary, accent, bg, text: ptext, sideBg, sideText, topBg, topText })
   const family = useMemo(() => fontFamily(font) ?? "'Inter Variable', system-ui, sans-serif", [font])
   const theme = {
     primary: HEX.test(primary) ? primary : '#09715e',
@@ -151,7 +210,9 @@ export function BrandingPage() {
     accentContrast: validation?.checks.accent?.text_color ?? '#111827',
     background: HEX.test(bg) ? bg : '#f5fbfa',
     fontFamily: family,
-    navTheme,
+    side: { preset: navTheme, color: sideBg, text: sideText },
+    top: { preset: navTheme, color: topBg, text: topText },
+    pageText: ptext,
     pageTheme,
     logoUrl: data?.logo_url ?? null,
     orgName: me?.organization?.name ?? t('app.name'),
@@ -161,17 +222,20 @@ export function BrandingPage() {
     <SettingsFrame wide title={t('settings.branding.title')} subtitle={t('settings.branding.subtitle')} query={query}>
       <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setBanner(null); save.mutate() }}>
         {banner && <p role="alert" className="text-sm text-error">{banner}</p>}
+        {legacyFound && <p role="status" className="rounded-(--radius) border border-border bg-surface p-3 text-sm">{t('settings.branding.legacyFound')}</p>}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
           <div className="space-y-6">
+            <Card title={t('settings.branding.combos')}>
+              <p className="text-xs text-muted">{t('settings.branding.combosHint')}</p>
+              <ComboGallery value={activeCombo?.key ?? ''} onPick={applyCombo} />
+              <p role="status" className="text-xs font-medium">
+                {activeCombo ? t('settings.branding.comboActive', { name: t(`settings.branding.combo_${activeCombo.key}`) }) : t('settings.branding.comboCustom')}
+              </p>
+            </Card>
+
             <Card>
               <ColorField id="brand-primary" label={t('settings.branding.primary')} value={primary} onChange={setPrimary} check={validation?.checks.primary} />
               <ColorField id="brand-accent" label={t('settings.branding.accent')} value={accent} onChange={setAccent} check={validation?.checks.accent} />
-              <ColorField id="brand-bg" label={t('settings.branding.background')} value={bg} onChange={setBg} check={bgCheck} />
-              <Select id="brand-bg-style" label={t('settings.branding.backgroundPreset')} value={bgStyle} onChange={(v) => { setBgStyle(v); const c = BACKGROUNDS[v]; if (c) setBg(c) }}>
-                {fonts.data?.background_styles.map((b) => (
-                  <option key={b} value={b}>{t(`settings.branding.bg_${b}`, { defaultValue: b })}</option>
-                ))}
-              </Select>
               <Select id="brand-font" label={t('settings.branding.font')} value={font} onChange={setFont}>
                 {fonts.data?.fonts.map((f) => (
                   <option key={f.key} value={f.key} style={{ fontFamily: fontFamily(f.key) ?? undefined }}>{f.label}</option>
@@ -179,40 +243,40 @@ export function BrandingPage() {
               </Select>
             </Card>
 
-            <Card title={t('settings.branding.pageTheme')}>
-              <p className="text-xs text-muted">{t('settings.branding.pageThemeHint')}</p>
-              <ThemeGrid
-                label={t('settings.branding.pageTheme')}
-                value={pageTheme}
-                onChange={(k) => { setPageTheme(k); setBg(pageThemeOf(k).bg) }}
-                items={PAGE_THEMES.map((p) => ({ key: p.key, bg: p.bg, text: p.text, name: t(`settings.branding.page_${p.key}`) }))}
-              />
+            <Card title={t('settings.branding.pageColors')}>
+              <ColorField id="brand-bg" label={t('settings.branding.background')} value={bg} onChange={(v) => { setBg(v); setBgStyle('') }} check={bgCheck} />
+              <div role="radiogroup" aria-label={t('settings.branding.backgroundPreset')} className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted">{t('settings.branding.backgroundPreset')}</span>
+                {fonts.data?.background_styles.map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    role="radio"
+                    aria-checked={bgStyle === b}
+                    onClick={() => { setBgStyle(b); const c = BACKGROUNDS[b]; if (c) setBg(c.toUpperCase()) }}
+                    className={`flex items-center gap-1.5 rounded-(--radius) border px-2 py-1 text-xs ${bgStyle === b ? 'border-primary ring-2 ring-primary' : 'border-border'}`}
+                  >
+                    <span className="size-4 rounded border border-border" style={{ background: BACKGROUNDS[b] ?? 'transparent' }} aria-hidden />
+                    {t(`settings.branding.bg_${b}`, { defaultValue: b })}
+                  </button>
+                ))}
+              </div>
+              <ColorField id="brand-page-text" label={t('settings.branding.pageText')} value={ptext} onChange={setPtext} against={bg} againstLabel={t('settings.branding.onPage')} />
+              <Button variant="ghost" size="sm" onClick={clearPage}>{t('settings.branding.clearCustom')}</Button>
             </Card>
 
-            <Card title={t('settings.branding.navTheme')}>
-              <p className="text-xs text-muted">{t('settings.branding.navThemeHint')}</p>
-              <ThemeGrid label={t('settings.branding.navTheme')} value={navTheme} onChange={setNavTheme} items={NAV_THEMES.map((n) => ({ key: n.key, bg: n.bg, text: n.text, name: t(`settings.branding.nav_${n.key}`) }))} />
+            <Card title={t('settings.branding.sideNav')}>
+              <ColorField id="brand-side-bg" label={t('settings.branding.sideColor')} value={sideBg} onChange={setSideBg} optional />
+              <ColorField id="brand-side-text" label={t('settings.branding.sideText')} value={sideText} onChange={setSideText} optional against={sideBg} againstLabel={t('settings.branding.onSide')} />
+              <Button variant="ghost" size="sm" onClick={() => { setSideBg(''); setSideText('') }}>{t('settings.branding.clearCustom')}</Button>
             </Card>
 
-            <Card title={t('settings.branding.mixedTheme')}>
-              <p className="text-xs text-muted">{t('settings.branding.mixedThemeHint')}</p>
-              <ThemeGrid
-                label={t('settings.branding.mixedTheme')}
-                value={MIXED_THEMES.find((m) => m.page === pageTheme && m.nav === navTheme)?.key ?? ''}
-                onChange={(k) => {
-                  const m = MIXED_THEMES.find((x) => x.key === k)
-                  if (!m) return
-                  setPageTheme(m.page)
-                  setNavTheme(m.nav)
-                  setBg(pageThemeOf(m.page).bg)
-                }}
-                items={MIXED_THEMES.map((m) => {
-                  const p = pageThemeOf(m.page)
-                  const n = NAV_THEMES.find((x) => x.key === m.nav)!
-                  return { key: m.key, bg: p.bg, text: p.text, navBg: n.bg, navText: n.text, name: t(`settings.branding.mixed_${m.key}`) }
-                })}
-              />
+            <Card title={t('settings.branding.topNav')}>
+              <ColorField id="brand-top-bg" label={t('settings.branding.topColor')} value={topBg} onChange={setTopBg} optional />
+              <ColorField id="brand-top-text" label={t('settings.branding.topText')} value={topText} onChange={setTopText} optional against={topBg} againstLabel={t('settings.branding.onTop')} />
+              <Button variant="ghost" size="sm" onClick={() => { setTopBg(''); setTopText('') }}>{t('settings.branding.clearCustom')}</Button>
             </Card>
+
           </div>
 
           <div className="lg:sticky lg:top-0 lg:self-start">
@@ -242,47 +306,38 @@ export function BrandingPage() {
   )
 }
 
-function ThemeGrid({ label, value, onChange, items }: { label: string; value: string; onChange: (key: string) => void; items: { key: string; bg: string; text: string; name: string; navBg?: string; navText?: string }[] }) {
+/** 11 cards, each a miniature (top bar, side bar, page, primary and accent buttons) with the combination name. */
+function ComboGallery({ value, onPick }: { value: string; onPick: (c: ColorCombo) => void }) {
   const { t } = useTranslation()
   return (
-    <div role="radiogroup" aria-label={label} className="grid grid-cols-5 gap-2">
-      {items.map((n) => {
-        const active = n.key === value
+    <div role="radiogroup" aria-label={t('settings.branding.combos')} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {COLOR_COMBOS.map((c) => {
+        const active = c.key === value
+        const name = t(`settings.branding.combo_${c.key}`)
         return (
           <button
-            key={n.key}
+            key={c.key}
             type="button"
             role="radio"
             aria-checked={active}
-            onClick={() => onChange(n.key)}
-            className={`flex flex-col items-center gap-1 rounded-(--radius) border p-1.5 text-[11px] ${active ? 'border-primary ring-2 ring-primary' : 'border-border'}`}
+            aria-label={name}
+            onClick={() => onPick(c)}
+            className={`flex flex-col gap-1 rounded-(--radius) border p-1.5 text-left text-[11px] font-medium ${active ? 'border-primary ring-2 ring-primary' : 'border-border'}`}
           >
-            <span className="flex h-9 w-full overflow-hidden rounded border border-border text-sm font-semibold" style={{ background: n.bg, color: n.text }}>
-              {n.navBg && <span className="w-1/3" style={{ background: n.navBg, color: n.navText }} />}
-              <span className="flex flex-1 items-center justify-center">{t('settings.branding.sample')}</span>
+            <span className="flex h-14 w-full flex-col overflow-hidden rounded border border-border" style={{ background: c.bg }} aria-hidden>
+              <span className="h-2.5 w-full" style={{ background: c.topBg }} />
+              <span className="flex min-h-0 flex-1">
+                <span className="w-1/5" style={{ background: c.sideBg }} />
+                <span className="flex flex-1 items-center justify-center gap-1 p-1" style={{ color: c.text }}>
+                  <span className="h-3 w-5 rounded-sm" style={{ background: c.primary }} />
+                  <span className="h-3 w-5 rounded-sm" style={{ background: c.accent }} />
+                </span>
+              </span>
             </span>
-            {n.name}
+            {name}
           </button>
         )
       })}
-    </div>
-  )
-}
-
-function ColorField({ id, label, value, onChange, check }: { id: string; label: string; value: string; onChange: (v: string) => void; check?: Check }) {
-  const { t } = useTranslation()
-  return (
-    <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-sm font-medium">{label}</label>
-      <div className="flex flex-wrap items-center gap-3">
-        <input type="color" aria-label={label} className="h-10 w-12 cursor-pointer rounded border border-border bg-surface" value={HEX.test(value) ? value : '#000000'} onChange={(e) => onChange(e.target.value.toUpperCase())} />
-        <input id={id} className="h-10 w-32 rounded-(--radius) border border-border bg-surface px-3 font-mono text-sm" value={value} maxLength={7} onChange={(e) => onChange(e.target.value)} aria-invalid={!HEX.test(value) || undefined} />
-        {check && (
-          <Badge tone={check.passes ? 'success' : 'error'}>
-            {check.passes ? t('settings.branding.contrastPass', { ratio: check.ratio }) : t('settings.branding.contrastFail', { ratio: check.ratio, min: check.minimum })}
-          </Badge>
-        )}
-      </div>
     </div>
   )
 }

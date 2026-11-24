@@ -7,6 +7,7 @@
     "role": {
       "org_admin": "Organization admin",
       "hr_user": "HR user",
+      "engineer": "Engineer",
       "super_admin": "Platform admin"
     },
     "userStatus": {

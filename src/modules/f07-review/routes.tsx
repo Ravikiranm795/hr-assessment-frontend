@@ -1,6 +1,8 @@
 import type { RouteObject } from 'react-router-dom'
 import { RequireAccess } from '@/core/auth/guards'
-import { ReviewPage } from './ReviewPage'
+import { lazyNamed } from '@/app/lazyNamed'
+
+const ReviewPage = lazyNamed(() => import('./ReviewPage'), 'ReviewPage')
 
 export const shellRoutes: RouteObject[] = [
   {

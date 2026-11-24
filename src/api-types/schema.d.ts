@@ -762,8 +762,8 @@ export interface paths {
         get: operations["list_users_api_v1_team_users_get"];
         put?: never;
         /**
-         * Create an HR user
-         * @description Role is fixed to HR user. Returns a one-time temporary password (A-07): first login forces a password change. Creating an organization admin is refused.
+         * Create an HR user or an engineer
+         * @description Role is `hr_user` (default) or `engineer`. Returns a one-time temporary password (A-07): first login forces a password change. Creating an organization admin is refused.
          */
         post: operations["create_user_api_v1_team_users_post"];
         delete?: never;
@@ -1129,12 +1129,12 @@ export interface paths {
         };
         /**
          * Organization branding
-         * @description Colors, background style, font, logo and favicon URLs and the contrast checks.
+         * @description Colors, background style, font, org-wide `page_theme` / `nav_theme` / `background_color`, logo and favicon URLs and the contrast checks.
          */
         get: operations["get_branding_api_v1_org_branding_get"];
         /**
          * Save branding
-         * @description Fails with `BRANDING_CONTRAST_TOO_LOW` when text on primary or accent is under WCAG AA.
+         * @description Patch semantics: omitted fields keep their value; `page_theme`, `nav_theme`, `background_color`, `logo_asset_id` and `favicon_asset_id` are cleared with an explicit `null`. Fails with `BRANDING_CONTRAST_TOO_LOW` when text on primary or accent is under WCAG AA.
          */
         put: operations["put_branding_api_v1_org_branding_put"];
         post?: never;
@@ -1175,7 +1175,7 @@ export interface paths {
         put?: never;
         /**
          * Reset to the starter theme
-         * @description Restores the starter colors and font. The organization's own logo and favicon stay.
+         * @description Restores the starter colors and font and clears `page_theme`, `nav_theme` and `background_color`. The organization's own logo and favicon stay.
          */
         post: operations["reset_branding_api_v1_org_branding_reset_post"];
         delete?: never;
@@ -1238,6 +1238,26 @@ export interface paths {
          * @description Multipart field `file`. PNG, ICO, JPEG or WebP, magic bytes and size are checked.
          */
         post: operations["upload_favicon_api_v1_org_branding_favicon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/branding/theme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Organization theme (read-only)
+         * @description The caller's organization theme: colors, font, `page_theme`, `nav_theme`, `background_color`, logo and favicon URLs. Same payload as `GET /api/v1/org/branding`, open to organization admins and HR users, not feature-gated.
+         */
+        get: operations["get_org_theme_api_v1_branding_theme_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2256,6 +2276,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/exam/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sections of a coding assessment
+         * @description Every section with its state and remaining time, and the running one (`active_key`). Only attempts whose assessment has coding questions are sectioned (`SECTION_NOT_FOUND` otherwise).
+         */
+        get: operations["sections_list_api_v1_exam_sections_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exam/sections/{key}/enter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enter a section
+         * @description Pauses the running section and resumes this one. Idempotent if it is already running. Records a `section_switch` proctoring event (info).
+         */
+        post: operations["section_enter_api_v1_exam_sections__key__enter_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exam/sections/{key}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit one section
+         * @description Closes the section and stops its clock. Idempotent. Does not submit the assessment: when `all_closed` is true the candidate submits it with POST /exam/submit.
+         */
+        post: operations["section_submit_api_v1_exam_sections__key__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exam/answers/{question_id}": {
         parameters: {
             query?: never;
@@ -2266,7 +2346,7 @@ export interface paths {
         get?: never;
         /**
          * Save an answer
-         * @description Idempotent, last write wins. Shapes: `{option_id}`, `{option_ids}`, `{blanks}`, `{gaps}`, `{text}`. Accepted until the deadline plus 5 seconds (`EXAM_TIME_OVER` after).
+         * @description Idempotent, last write wins. Shapes: `{option_id}`, `{option_ids}`, `{blanks}`, `{gaps}`, `{text}`, coding `{text, language}` (empty text allowed). Accepted until the deadline plus 5 seconds (`EXAM_TIME_OVER` after); in a sectioned attempt the question's section must be running (`SECTION_NOT_RUNNING`).
          */
         put: operations["save_answer_api_v1_exam_answers__question_id__put"];
         post?: never;
@@ -2287,7 +2367,7 @@ export interface paths {
         put?: never;
         /**
          * Heartbeat
-         * @description Server-computed remaining seconds. The clock never pauses on a disconnect.
+         * @description Server-computed remaining seconds (`ok`, `server_time` too). The clock never pauses on a disconnect. Optional body `{session_id (8-64 chars), visible}` also lets the server record `heartbeat_gap` (silence over 30 s) and `second_session` proctoring events; about 1 call per 5 s per attempt (429 above that). Never ends or blocks the exam.
          */
         post: operations["heartbeat_api_v1_exam_heartbeat_post"];
         delete?: never;
@@ -2436,6 +2516,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attempts/{attempt_id}/ai-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current AI summary of an attempt
+         * @description Reviewers only (owner and org admin); candidates never see it. `summary` is null when none was generated. `stale` is true when the attempt data changed since it was generated. It describes evidence only (no hiring advice) and never contains photos.
+         */
+        get: operations["get_ai_summary_api_v1_attempts__attempt_id__ai_summary_get"];
+        put?: never;
+        /**
+         * Generate the AI summary of an attempt
+         * @description Submitted attempts only (`CONFLICT` with `details.reason` `attempt_not_submitted`, or `candidate_data_erased`). With the same input as the stored summary and `force` false, the stored one is returned without calling the AI. Rate limited per user (`RATE_LIMITED`). Audited as `AI_SUMMARY_GENERATED` (no content). Uses the organisation's AI settings.
+         */
+        post: operations["generate_ai_summary_api_v1_attempts__attempt_id__ai_summary_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attempts/{attempt_id}/snapshots/{asset_id}/url": {
         parameters: {
             query?: never;
@@ -2450,6 +2554,46 @@ export interface paths {
         get: operations["snapshot_url_api_v1_attempts__attempt_id__snapshots__asset_id__url_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attempts/{attempt_id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List an attempt's photos
+         * @description Periodic webcam photos, violation-event photos and the baseline, oldest first. Keyset pagination: pass `next_cursor` as `cursor`. `event_id`, `event_type` and `severity` are set for photos linked to a violation event. Use the signed URL endpoint to view one.
+         */
+        get: operations["photos_api_v1_attempts__attempt_id__photos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attempts/{attempt_id}/photos/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete the photos now
+         * @description Body `{"confirm": true}`. Only after an approved or rejected decision (`PHOTOS_DELETE_NOT_ALLOWED` otherwise). Removes every photo and file of the attempt; answers, scores, decision and events stay. Idempotent. Audited (`PHOTOS_DELETED`).
+         */
+        post: operations["delete_photos_api_v1_attempts__attempt_id__photos_delete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2474,6 +2618,46 @@ export interface paths {
          * @description Manual or AI-score override with a reason (marks up to the question's marks). Audited.
          */
         patch: operations["override_score_api_v1_attempts__attempt_id__answers__question_id__score_patch"];
+        trace?: never;
+    };
+    "/api/v1/attempts/{attempt_id}/answers/{question_id}/verdict": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the verdict on a coding answer
+         * @description Reviewer's own call (`accepted` or `not_acceptable`, optional note up to 1000 characters) on a `code_write` answer of a submitted attempt. Advisory: marks, pass mark and the decision are untouched. Same permission as the manual-marks override. Audited (`CODE_VERDICT_SET`).
+         */
+        put: operations["set_code_verdict_api_v1_attempts__attempt_id__answers__question_id__verdict_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attempts/{attempt_id}/answers/{question_id}/ai-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run the AI review of a coding answer
+         * @description (Re)runs the advisory AI review (correctness percent, summary, strengths, issues) for one `code_write` answer with AI review on. The code is sent as untrusted data without the candidate's name. Needs the `review` and `ai_scoring` flags. Rate limited per user. AI problems are returned as their error code and leave the stored review as it was.
+         */
+        post: operations["run_code_ai_review_api_v1_attempts__attempt_id__answers__question_id__ai_review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/attempts/{attempt_id}/rescore": {
@@ -3300,6 +3484,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/exam/code/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Languages the code runner can execute
+         * @description `enabled` is false when the runner is off. The UI hides Run for any language not listed (for example `sql`).
+         */
+        get: operations["options_api_v1_exam_code_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exam/code/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run the code against the sample cases
+         * @description Runs every visible sample (stdin = `input`, 5 s per case, memory capped) and compares stdout after trimming trailing whitespace per line and at the end. Needs the question's section to be running. Advisory only: stored as evidence for reviewers, never a score. One run per attempt per 3 s and 60 per question. A runner failure is `RUNNER_UNAVAILABLE` and the elapsed seconds are credited back to the section.
+         */
+        post: operations["run_api_v1_exam_code_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/settings/sso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SSO settings
+         * @description The organization's identity provider setup. The client secret is never returned, only `has_secret`. `redirect_uri` is read-only: paste it into the identity provider. `status` is `not_set_up`, `needs_test`, `disabled` or `active`.
+         */
+        get: operations["get_sso_api_v1_org_settings_sso_get"];
+        /**
+         * Save SSO settings
+         * @description Provider (`google`, `microsoft` with `tenant_id`, or `oidc` with `issuer`), client id, write-only client secret (omit to keep; required the first time), scopes, allowed email domains (lowercased, unique across organizations: `VALIDATION_ERROR` with `domain_taken`), `enabled` and `sso_required`. Changing the connection (provider, issuer, tenant, client id, secret, scopes or domains) resets the verified state. `enabled` and `sso_required` need a verified provider (`SSO_NOT_VERIFIED`). Audited as `SSO_CONFIG_UPDATED`.
+         */
+        put: operations["put_sso_api_v1_org_settings_sso_put"];
+        post?: never;
+        /**
+         * Remove SSO
+         * @description Deletes the provider, its domains and the linked identities. Password login is unaffected.
+         */
+        delete: operations["delete_sso_api_v1_org_settings_sso_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/settings/sso/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a test sign-in
+         * @description Returns the `authorize_url` for the calling admin's own test sign-in and sets the signed state cookie. When the admin's email passes every check the callback marks the provider verified (`SSO_TESTED`) and redirects to `{APP_BASE_URL}/settings/sign-in?sso_test=ok` (or `=failed`). The admin's email domain must be in the domain list. Rate limited.
+         */
+        post: operations["test_sso_api_v1_org_settings_sso_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sso/discover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Does this email sign in with SSO?
+         * @description Answers by email domain only (never by user lookup, so it does not reveal whether an address exists). `sso` is true when the domain's organization has an enabled, tested provider. `sso_required` is the organization switch: non-admin users are refused at password login, organization admins keep it, so the login page should keep a small password link. Rate limited.
+         */
+        post: operations["discover_api_v1_auth_sso_discover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sso/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start an SSO sign-in
+         * @description Creates `state`, `nonce` and the PKCE verifier, keeps them in a signed 10 minute HttpOnly cookie (SameSite=Lax, nothing stored server-side) and returns the identity provider's `authorize_url`; the browser navigates there. `SSO_NOT_CONFIGURED` when the domain has no usable provider. Rate limited.
+         */
+        post: operations["start_api_v1_auth_sso_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sso/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SSO redirect target (browser only)
+         * @description Where the identity provider sends the browser back. Checks state and cookie, exchanges the code (client secret and PKCE), validates the ID token, then finds the existing active user in the organization that owns the provider. Always answers `303`: success sets the refresh cookie and goes to `{APP_BASE_URL}/sso/done` (the client then calls `POST /auth/refresh`); an enabled authenticator app goes to `{APP_BASE_URL}/login/totp#totp_token=...`; any failure goes to `{APP_BASE_URL}/login?sso_error=failed|expired|unavailable` (generic on purpose; the reason is audited). Rate limited.
+         */
+        get: operations["callback_api_v1_auth_sso_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3490,6 +3822,33 @@ export interface components {
             /** Verified At */
             verified_at?: string | null;
         };
+        /** AiSummaryGenerateIn */
+        AiSummaryGenerateIn: {
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+        };
+        /**
+         * AiSummaryOut
+         * @description The attempt's current AI summary (reviewers only). ``summary`` is null until one is generated;
+         *     ``stale`` is true when the attempt data changed since (scores, overrides, new events).
+         */
+        AiSummaryOut: {
+            summary?: components["schemas"]["SummaryContent"] | null;
+            /** Generated At */
+            generated_at?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Prompt Version */
+            prompt_version?: string | null;
+            /**
+             * Stale
+             * @default false
+             */
+            stale: boolean;
+        };
         /** AiTestOut */
         AiTestOut: {
             /** Ok */
@@ -3536,6 +3895,18 @@ export interface components {
         AnswerIn: {
             /** Answer */
             answer: unknown;
+        };
+        /** AnswerNote */
+        AnswerNote: {
+            /**
+             * Question Id
+             * Format: uuid
+             */
+            question_id: string;
+            /** Position */
+            position: number;
+            /** Note */
+            note: string;
         };
         /** AnswerOut */
         AnswerOut: {
@@ -3628,7 +3999,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer";
+            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer" | "code_write";
             /** Prompt Html */
             prompt_html: string;
             /**
@@ -3651,6 +4022,11 @@ export interface components {
             model_answer?: string | null;
             /** Code Language */
             code_language?: string | null;
+            /**
+             * Duration Minutes
+             * @description Minutes of a code_write section (required), else rejected.
+             */
+            duration_minutes?: number | null;
         };
         /**
          * AssessmentCreate
@@ -3809,6 +4185,7 @@ export interface components {
             flag_counts: {
                 [key: string]: unknown;
             };
+            risk?: components["schemas"]["Risk"];
             /** Timeline */
             timeline: components["schemas"]["EventRow"][];
             /** Snapshot Asset Ids */
@@ -3821,6 +4198,17 @@ export interface components {
             }[];
             /** Decision History */
             decision_history: components["schemas"]["DecisionRow"][];
+            /** Photos Delete After */
+            photos_delete_after?: string | null;
+            /** Photos Purged At */
+            photos_purged_at?: string | null;
+            /**
+             * Photo Count
+             * @default 0
+             */
+            photo_count: number;
+            /** Code Sections */
+            code_sections?: components["schemas"]["CodeAnswerReport"][];
         };
         /** AttemptRow */
         AttemptRow: {
@@ -3852,6 +4240,7 @@ export interface components {
             flag_counts: {
                 [key: string]: unknown;
             };
+            risk?: components["schemas"]["Risk"];
             /** Submitted At */
             submitted_at: string | null;
         };
@@ -4069,7 +4458,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer";
+            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer" | "code_write";
             /** Prompt Html */
             prompt_html: string;
             /**
@@ -4092,6 +4481,11 @@ export interface components {
             model_answer?: string | null;
             /** Code Language */
             code_language?: string | null;
+            /**
+             * Duration Minutes
+             * @description Minutes of a code_write section (required), else rejected.
+             */
+            duration_minutes?: number | null;
             /** Tags */
             tags?: string[];
         };
@@ -4111,7 +4505,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer";
+            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer" | "code_write";
             /** Prompt Html */
             prompt_html: string;
             /** Marks */
@@ -4147,7 +4541,7 @@ export interface components {
         /** BankItemPatch */
         BankItemPatch: {
             /** Type */
-            type?: ("single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer") | null;
+            type?: ("single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer" | "code_write") | null;
             /** Prompt Html */
             prompt_html?: string | null;
             /** Marks */
@@ -4213,6 +4607,22 @@ export interface components {
             primary_color?: string | null;
             /** Accent Color */
             accent_color?: string | null;
+            /** Page Theme */
+            page_theme?: ("oat" | "sage" | "lilac" | "glass" | "blush" | "ink" | "graphite" | "pine" | "aubergine" | "ember") | null;
+            /** Nav Theme */
+            nav_theme?: ("oat" | "sage" | "lilac" | "glass" | "blush" | "ink" | "graphite" | "pine" | "aubergine" | "ember") | null;
+            /** Background Color */
+            background_color?: string | null;
+            /** Side Nav Color */
+            side_nav_color?: string | null;
+            /** Side Nav Text Color */
+            side_nav_text_color?: string | null;
+            /** Top Nav Color */
+            top_nav_color?: string | null;
+            /** Top Nav Text Color */
+            top_nav_text_color?: string | null;
+            /** Page Text Color */
+            page_text_color?: string | null;
         };
         /** BrandingValidateOut */
         BrandingValidateOut: {
@@ -4224,6 +4634,22 @@ export interface components {
                     [key: string]: unknown;
                 };
             };
+            /** Page Theme */
+            page_theme?: string | null;
+            /** Nav Theme */
+            nav_theme?: string | null;
+            /** Background Color */
+            background_color?: string | null;
+            /** Side Nav Color */
+            side_nav_color?: string | null;
+            /** Side Nav Text Color */
+            side_nav_text_color?: string | null;
+            /** Top Nav Color */
+            top_nav_color?: string | null;
+            /** Top Nav Text Color */
+            top_nav_text_color?: string | null;
+            /** Page Text Color */
+            page_text_color?: string | null;
         };
         /** BulkQuestionsIn */
         BulkQuestionsIn: {
@@ -4253,6 +4679,26 @@ export interface components {
             invite_id?: string | null;
             /** Exam Url */
             exam_url?: string | null;
+        };
+        /** CaseOut */
+        CaseOut: {
+            /** Index */
+            index: number;
+            /** Input */
+            input: string;
+            /** Expected */
+            expected: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "passed" | "failed" | "error" | "timeout";
+            /** Actual */
+            actual: string;
+            /** Stderr */
+            stderr: string;
+            /** Time Ms */
+            time_ms: number;
         };
         /** CatalogItem */
         CatalogItem: {
@@ -4290,6 +4736,102 @@ export interface components {
              * @description Set once an interpretation is confirmed
              */
             estimated_rows?: number | null;
+        };
+        /**
+         * CodeAiReviewOut
+         * @description ``pending``: not reviewed yet; ``unavailable``: AI off, failed or not applicable (see ``reason``).
+         */
+        CodeAiReviewOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "done" | "unavailable" | "pending";
+            /** Percent */
+            percent?: number | null;
+            /** Summary */
+            summary?: string | null;
+            /** Strengths */
+            strengths?: string[];
+            /** Issues */
+            issues?: string[];
+            /** Reason */
+            reason?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+        };
+        /** CodeAnswerReport */
+        CodeAnswerReport: {
+            /**
+             * Question Id
+             * Format: uuid
+             */
+            question_id: string;
+            /** Position */
+            position: number;
+            /** Prompt Html */
+            prompt_html: string;
+            /** Language */
+            language: string | null;
+            /** Code */
+            code: string | null;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Spent Seconds */
+            spent_seconds: number;
+            /** Switch Count */
+            switch_count: number;
+            /** State */
+            state: string | null;
+            runs: components["schemas"]["CodeRunsOut"];
+            ai_review: components["schemas"]["CodeAiReviewOut"];
+            human_verdict?: components["schemas"]["CodeVerdictOut"] | null;
+        };
+        /** CodeRunLatest */
+        CodeRunLatest: {
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /** Passed */
+            passed: number;
+            /** Total */
+            total: number;
+            /** Language */
+            language: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Results */
+            results: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** CodeRunsOut */
+        CodeRunsOut: {
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            latest?: components["schemas"]["CodeRunLatest"] | null;
+        };
+        /** CodeVerdictOut */
+        CodeVerdictOut: {
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "accepted" | "not_acceptable";
+            /** Note */
+            note?: string | null;
+            /** By Name */
+            by_name?: string | null;
+            /** At */
+            at?: string | null;
         };
         /** ColumnCatalog */
         ColumnCatalog: {
@@ -4740,6 +5282,8 @@ export interface components {
             ignored: number;
             /** Serious */
             serious?: components["schemas"]["SeriousEventOut"][];
+            /** Events */
+            events?: components["schemas"]["StoredEventOut"][];
         };
         /** ExportRequest */
         ExportRequest: {
@@ -4898,6 +5442,19 @@ export interface components {
             /** Logo Asset Id */
             logo_asset_id?: string | null;
         };
+        /**
+         * HeartbeatIn
+         * @description Optional body: with ``session_id`` the server tracks liveness gaps and a second browser session.
+         */
+        HeartbeatIn: {
+            /** Session Id */
+            session_id: string;
+            /**
+             * Visible
+             * @default true
+             */
+            visible: boolean;
+        };
         /** HeartbeatOut */
         HeartbeatOut: {
             /** Status */
@@ -4906,6 +5463,19 @@ export interface components {
             remaining_seconds: number;
             /** Time Over */
             time_over: boolean;
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /** Server Time */
+            server_time?: string | null;
+            /** Sections */
+            sections?: components["schemas"]["SectionOut"][];
+            /** Active Key */
+            active_key?: string | null;
+            /** Section Expired */
+            section_expired?: string | null;
         };
         /** HelpCurrentOut */
         HelpCurrentOut: {
@@ -4986,6 +5556,28 @@ export interface components {
             granted_camera_exempt: boolean | null;
             /** Granted Extra Minutes */
             granted_extra_minutes: number | null;
+        };
+        /** Highlight */
+        Highlight: {
+            /** Type */
+            type: string;
+            /** Severity */
+            severity: string;
+            /** Count */
+            count: number;
+            /** Total Duration Ms */
+            total_duration_ms?: number | null;
+            /** Note */
+            note: string;
+        };
+        /** Integrity */
+        Integrity: {
+            /** Overview */
+            overview: string;
+            /** Highlights */
+            highlights: components["schemas"]["Highlight"][];
+            /** Caveat */
+            caveat: string;
         };
         /** InterpretIn */
         InterpretIn: {
@@ -5254,7 +5846,7 @@ export interface components {
          * MeOut
          * @example {
          *       "branding": {
-         *         "endpoint": "/api/v1/org/branding",
+         *         "endpoint": "/api/v1/branding/theme",
          *         "scope": "org"
          *       },
          *       "flags": {
@@ -5431,6 +6023,13 @@ export interface components {
             text_html: string;
             /** Is Correct */
             is_correct: boolean;
+        };
+        /** OptionsOut */
+        OptionsOut: {
+            /** Enabled */
+            enabled: boolean;
+            /** Languages */
+            languages: string[];
         };
         /**
          * OrgCreate
@@ -5919,6 +6518,71 @@ export interface components {
              */
             blocklist: boolean;
         };
+        /** Performance */
+        Performance: {
+            /** Overview */
+            overview: string;
+            /** Strengths */
+            strengths: string[];
+            /** Weak Areas */
+            weak_areas: string[];
+        };
+        /** PhotoItem */
+        PhotoItem: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            /**
+             * Taken At
+             * Format: date-time
+             */
+            taken_at: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "periodic" | "event" | "baseline";
+            /** Event Id */
+            event_id?: string | null;
+            /** Event Type */
+            event_type?: string | null;
+            /** Severity */
+            severity?: string | null;
+        };
+        /** PhotoPage */
+        PhotoPage: {
+            /** Items */
+            items: components["schemas"]["PhotoItem"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+            /** Total */
+            total: number;
+        };
+        /** PhotosDeleteIn */
+        PhotosDeleteIn: {
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** PhotosDeletedOut */
+        PhotosDeletedOut: {
+            /** Periodic */
+            periodic: number;
+            /** Event */
+            event: number;
+            /** Baseline */
+            baseline: number;
+            /** Files */
+            files: number;
+            /**
+             * Already Purged
+             * @default false
+             */
+            already_purged: boolean;
+            /** Photos Purged At */
+            photos_purged_at?: string | null;
+        };
         /** PlatformAuditFilters */
         PlatformAuditFilters: {
             /**
@@ -6062,7 +6726,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer";
+            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer" | "code_write";
             /** Prompt Html */
             prompt_html: string;
             /** Marks */
@@ -6073,12 +6737,22 @@ export interface components {
             blank_count: number | null;
             /** Code Language */
             code_language: string | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
+            /** Languages */
+            languages?: string[] | null;
+            /** Samples */
+            samples?: {
+                [key: string]: string;
+            }[] | null;
+            /** Starter Code */
+            starter_code?: string | null;
         };
         /** ProctoringConfig */
         ProctoringConfig: {
             /**
              * Snapshot Interval Seconds
-             * @default 60
+             * @default 15
              */
             snapshot_interval_seconds: number;
         };
@@ -6253,7 +6927,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer";
+            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer" | "code_write";
             /** Prompt Html */
             prompt_html: string;
             /**
@@ -6276,6 +6950,11 @@ export interface components {
             model_answer?: string | null;
             /** Code Language */
             code_language?: string | null;
+            /**
+             * Duration Minutes
+             * @description Minutes of a code_write section (required), else rejected.
+             */
+            duration_minutes?: number | null;
         };
         /** QuestionList */
         QuestionList: {
@@ -6295,7 +6974,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer";
+            type: "single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer" | "code_write";
             /** Prompt Html */
             prompt_html: string;
             /** Marks */
@@ -6315,11 +6994,13 @@ export interface components {
             model_answer: string | null;
             /** Code Language */
             code_language: string | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
         };
         /** QuestionPatch */
         QuestionPatch: {
             /** Type */
-            type?: ("single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer") | null;
+            type?: ("single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer" | "code_write") | null;
             /** Prompt Html */
             prompt_html?: string | null;
             /** Marks */
@@ -6336,6 +7017,8 @@ export interface components {
             model_answer?: string | null;
             /** Code Language */
             code_language?: string | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
         };
         /** QuestionTypeOption */
         QuestionTypeOption: {
@@ -6364,6 +7047,7 @@ export interface components {
             };
             /** Remaining Seconds */
             remaining_seconds: number;
+            section?: components["schemas"]["SectionOut"] | null;
         };
         /** ReadAllOut */
         ReadAllOut: {
@@ -6444,6 +7128,28 @@ export interface components {
         RetentionOut: {
             /** Retention Days */
             retention_days: number;
+        };
+        /**
+         * Risk
+         * @description Proctoring risk (stored in ``flag_counts["risk"]``); informational, never blocks anything.
+         */
+        Risk: {
+            /**
+             * Score
+             * @default 0
+             */
+            score: number;
+            /**
+             * Level
+             * @default low
+             * @enum {string}
+             */
+            level: "low" | "medium" | "high";
+            /**
+             * Flagged
+             * @default false
+             */
+            flagged: boolean;
         };
         /**
          * RoleCreate
@@ -6571,6 +7277,34 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** RunIn */
+        RunIn: {
+            /**
+             * Question Id
+             * Format: uuid
+             */
+            question_id: string;
+            /** Language */
+            language: string;
+            /** Code */
+            code: string;
+        };
+        /** RunOut */
+        RunOut: {
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /** Passed */
+            passed: number;
+            /** Total */
+            total: number;
+            /** Duration Ms */
+            duration_ms: number;
+            /** Results */
+            results: components["schemas"]["CaseOut"][];
+        };
         /** ScoreOverrideIn */
         ScoreOverrideIn: {
             /** Marks */
@@ -6591,6 +7325,48 @@ export interface components {
             score_percent: number | null;
             /** Passed */
             passed: boolean | null;
+        };
+        /** SectionOut */
+        SectionOut: {
+            /** Key */
+            key: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "mcq" | "code";
+            /** Question Id */
+            question_id: string | null;
+            /** Position */
+            position: number;
+            /** Title */
+            title: string | null;
+            /** Question Count */
+            question_count: number;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Remaining Seconds */
+            remaining_seconds: number;
+            /** State */
+            state: string;
+            /** Switch Count */
+            switch_count: number;
+        };
+        /** SectionSubmitOut */
+        SectionSubmitOut: {
+            /** Sections */
+            sections: components["schemas"]["SectionOut"][];
+            /** Active Key */
+            active_key: string | null;
+            /** All Closed */
+            all_closed: boolean;
+        };
+        /** SectionsOut */
+        SectionsOut: {
+            /** Sections */
+            sections: components["schemas"]["SectionOut"][];
+            /** Active Key */
+            active_key: string | null;
         };
         /** SecurityEventsPage */
         SecurityEventsPage: {
@@ -6679,7 +7455,7 @@ export interface components {
         };
         /**
          * SeriousEventOut
-         * @description An accepted event the server rated serious: the client may attach a photo to it (POST /exam/snapshots).
+         * @description An accepted event rated serious by the server: the client may attach a photo (POST /exam/snapshots).
          */
         SeriousEventOut: {
             /** Index */
@@ -6718,6 +7494,189 @@ export interface components {
             default_columns: string[];
             /** Fields */
             fields: components["schemas"]["FieldOut"][];
+        };
+        /** SsoDiscoverIn */
+        SsoDiscoverIn: {
+            /** Email */
+            email: string;
+        };
+        /**
+         * SsoDiscoverOut
+         * @example {
+         *       "provider": "microsoft",
+         *       "sso": true,
+         *       "sso_required": false
+         *     }
+         */
+        SsoDiscoverOut: {
+            /** Sso */
+            sso: boolean;
+            /** Provider */
+            provider?: ("google" | "microsoft" | "oidc") | null;
+            /**
+             * Sso Required
+             * @default false
+             */
+            sso_required: boolean;
+        };
+        /** SsoOkOut */
+        SsoOkOut: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+        };
+        /** SsoSettingsIn */
+        SsoSettingsIn: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "google" | "microsoft" | "oidc";
+            /** Client Id */
+            client_id: string;
+            /**
+             * Client Secret
+             * @description Write-only. Omit to keep the stored secret. Required the first time.
+             */
+            client_secret?: string | null;
+            /**
+             * Tenant Id
+             * @description Microsoft only: the directory (tenant) id, a GUID. The issuer is built from it.
+             */
+            tenant_id?: string | null;
+            /**
+             * Issuer
+             * @description Other OpenID Connect only: the issuer URL exactly as the provider reports it.
+             */
+            issuer?: string | null;
+            /**
+             * Scopes
+             * @description Space separated; must include `openid`. Default `openid email profile`.
+             */
+            scopes?: string | null;
+            /**
+             * Domains
+             * @description Email domains of this organization's people, for example `acme.com`. Unique across organizations.
+             */
+            domains?: string[];
+            /**
+             * Enabled
+             * @description Cannot be turned on until a test sign-in succeeded.
+             * @default false
+             */
+            enabled: boolean;
+            /**
+             * Sso Required
+             * @description Password login is refused for non-admin users. Organization admins keep it.
+             * @default false
+             */
+            sso_required: boolean;
+        };
+        /**
+         * SsoSettingsOut
+         * @example {
+         *       "client_id": "7c1d2e3f-0000-4000-8000-123456789abc",
+         *       "configured": true,
+         *       "domains": [
+         *         "acme.com"
+         *       ],
+         *       "enabled": true,
+         *       "has_secret": true,
+         *       "issuer": "https://login.microsoftonline.com/0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10/v2.0",
+         *       "provider": "microsoft",
+         *       "redirect_uri": "https://api.example.com/api/v1/auth/sso/callback",
+         *       "scopes": "openid email profile",
+         *       "sso_required": false,
+         *       "status": "active",
+         *       "tenant_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+         *       "verified": true,
+         *       "verified_at": "2026-11-24T10:00:00Z"
+         *     }
+         */
+        SsoSettingsOut: {
+            /** Configured */
+            configured: boolean;
+            /** Provider */
+            provider?: ("google" | "microsoft" | "oidc") | null;
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /**
+             * Verified
+             * @default false
+             */
+            verified: boolean;
+            /** Verified At */
+            verified_at?: string | null;
+            /**
+             * Status
+             * @default not_set_up
+             * @enum {string}
+             */
+            status: "not_set_up" | "needs_test" | "disabled" | "active";
+            /** Issuer */
+            issuer?: string | null;
+            /** Tenant Id */
+            tenant_id?: string | null;
+            /** Client Id */
+            client_id?: string | null;
+            /**
+             * Has Secret
+             * @default false
+             */
+            has_secret: boolean;
+            /**
+             * Scopes
+             * @default openid email profile
+             */
+            scopes: string;
+            /**
+             * Domains
+             * @default []
+             */
+            domains: string[];
+            /**
+             * Sso Required
+             * @default false
+             */
+            sso_required: boolean;
+            /**
+             * Redirect Uri
+             * @description Paste this into the identity provider as the allowed redirect URI.
+             */
+            redirect_uri: string;
+        };
+        /** SsoStartIn */
+        SsoStartIn: {
+            /** Email */
+            email: string;
+        };
+        /**
+         * SsoStartOut
+         * @example {
+         *       "authorize_url": "https://idp.example.com/authorize?client_id=abc"
+         *     }
+         */
+        SsoStartOut: {
+            /** Authorize Url */
+            authorize_url: string;
+        };
+        /**
+         * SsoTestOut
+         * @example {
+         *       "authorize_url": "https://idp.example.com/authorize?client_id=abc"
+         *     }
+         */
+        SsoTestOut: {
+            /**
+             * Authorize Url
+             * @description Send the browser here; the callback marks the provider verified.
+             */
+            authorize_url: string;
         };
         /** StateOut */
         StateOut: {
@@ -6764,11 +7723,36 @@ export interface components {
             remaining_seconds: number | null;
             /** Question Count */
             question_count: number;
+            /**
+             * Sectioned
+             * @default false
+             */
+            sectioned: boolean;
+            /** Sections */
+            sections?: components["schemas"]["SectionOut"][];
         };
         /** StatusChangeIn */
         StatusChangeIn: {
             /** Reason */
             reason?: string | null;
+        };
+        /**
+         * StoredEventOut
+         * @description Every accepted event, so the client can attach a proof photo to any camera violation, not only
+         *     the ones rated serious (``POST /exam/snapshots`` takes any event id of the attempt).
+         */
+        StoredEventOut: {
+            /** Index */
+            index: number;
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Type */
+            type: string;
+            /** Severity */
+            severity: string;
         };
         /** SubmitOut */
         SubmitOut: {
@@ -6823,6 +7807,17 @@ export interface components {
             model_answer?: string | null;
             /** Code Language */
             code_language?: string | null;
+        };
+        /** SummaryContent */
+        SummaryContent: {
+            /** Headline */
+            headline: string;
+            performance: components["schemas"]["Performance"];
+            /** Answers */
+            answers: components["schemas"]["AnswerNote"][];
+            integrity: components["schemas"]["Integrity"];
+            /** Disclaimer */
+            disclaimer: string;
         };
         /** SystemCheckIn */
         SystemCheckIn: {
@@ -6880,6 +7875,8 @@ export interface components {
             deadline_at: string | null;
             /** Remaining Seconds */
             remaining_seconds: number | null;
+            /** Sections */
+            sections?: components["schemas"]["SectionOut"][];
         };
         /**
          * TotpDisableIn
@@ -7025,7 +8022,7 @@ export interface components {
             locale?: string | null;
             /**
              * Role
-             * @description Optional and fixed to hr_user. Any admin role is refused with ADMIN_ONLY_ACTION.
+             * @description Optional: hr_user (default) or engineer. Any admin role is refused with ADMIN_ONLY_ACTION.
              */
             role?: string | null;
         };
@@ -7156,6 +8153,16 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** VerdictIn */
+        VerdictIn: {
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "accepted" | "not_acceptable";
+            /** Note */
+            note?: string | null;
+        };
         /** VersionList */
         VersionList: {
             /** Items */
@@ -7207,6 +8214,16 @@ export interface components {
             total_marks: number;
             /** Question Count */
             question_count: number;
+            /**
+             * Has Code
+             * @default false
+             */
+            has_code: boolean;
+            /**
+             * Code Question Count
+             * @default 0
+             */
+            code_question_count: number;
             /**
              * In Use
              * @description Protected from purge: open role link, undecided attempt or pending invite.
@@ -7287,7 +8304,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "super_admin" | "org_admin" | "hr_user";
+            role: "super_admin" | "org_admin" | "hr_user" | "engineer";
             /** Org Id */
             org_id: string | null;
             /** Locale */
@@ -7410,6 +8427,46 @@ export interface components {
             logo_asset_id?: string | null;
             /** Favicon Asset Id */
             favicon_asset_id?: string | null;
+            /**
+             * Page Theme
+             * @description Org-wide page theme preset. Omit to keep, `null` to clear.
+             */
+            page_theme?: ("oat" | "sage" | "lilac" | "glass" | "blush" | "ink" | "graphite" | "pine" | "aubergine" | "ember") | null;
+            /**
+             * Nav Theme
+             * @description Org-wide navigation theme preset. Omit to keep, `null` to clear.
+             */
+            nav_theme?: ("oat" | "sage" | "lilac" | "glass" | "blush" | "ink" | "graphite" | "pine" | "aubergine" | "ember") | null;
+            /**
+             * Background Color
+             * @description Custom page background `#RRGGBB`. Omit to keep, `null` to clear.
+             */
+            background_color?: string | null;
+            /**
+             * Side Nav Color
+             * @description Side navigation `#RRGGBB`. `null` clears.
+             */
+            side_nav_color?: string | null;
+            /**
+             * Side Nav Text Color
+             * @description Side navigation text `#RRGGBB`.
+             */
+            side_nav_text_color?: string | null;
+            /**
+             * Top Nav Color
+             * @description Top navigation `#RRGGBB`. `null` clears.
+             */
+            top_nav_color?: string | null;
+            /**
+             * Top Nav Text Color
+             * @description Top navigation text `#RRGGBB`.
+             */
+            top_nav_text_color?: string | null;
+            /**
+             * Page Text Color
+             * @description Text on page background and cards.
+             */
+            page_text_color?: string | null;
         };
         /**
          * BrandingOut
@@ -7425,6 +8482,8 @@ export interface components {
          *       },
          *       "font_key": "inter",
          *       "is_customized": false,
+         *       "nav_theme": "ink",
+         *       "page_theme": "sage",
          *       "primary_color": "#1B2A4A",
          *       "status_colors": {
          *         "error": "#B3261E",
@@ -7442,6 +8501,22 @@ export interface components {
             background_style: string;
             /** Font Key */
             font_key: string;
+            /** Page Theme */
+            page_theme?: string | null;
+            /** Nav Theme */
+            nav_theme?: string | null;
+            /** Background Color */
+            background_color?: string | null;
+            /** Side Nav Color */
+            side_nav_color?: string | null;
+            /** Side Nav Text Color */
+            side_nav_text_color?: string | null;
+            /** Top Nav Color */
+            top_nav_color?: string | null;
+            /** Top Nav Text Color */
+            top_nav_text_color?: string | null;
+            /** Page Text Color */
+            page_text_color?: string | null;
             /** Logo Url */
             logo_url: string | null;
             /** Favicon Url */
@@ -7511,6 +8586,16 @@ export interface components {
             total_marks: number;
             /** Question Count */
             question_count: number;
+            /**
+             * Has Code
+             * @default false
+             */
+            has_code: boolean;
+            /**
+             * Code Question Count
+             * @default 0
+             */
+            code_question_count: number;
             /**
              * In Use
              * @description Protected from purge: open role link, undecided attempt or pending invite.
@@ -8578,7 +9663,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "branding": {
-                     *         "endpoint": "/api/v1/org/branding",
+                     *         "endpoint": "/api/v1/branding/theme",
                      *         "scope": "org"
                      *       },
                      *       "flags": {
@@ -11481,7 +12566,7 @@ export interface operations {
                 q?: string | null;
                 /** @description active or inactive */
                 status?: string | null;
-                /** @description org_admin or hr_user */
+                /** @description org_admin, hr_user or engineer */
                 role?: string | null;
                 page?: number;
                 page_size?: number;
@@ -13796,6 +14881,8 @@ export interface operations {
                      *       },
                      *       "font_key": "inter",
                      *       "is_customized": false,
+                     *       "nav_theme": "ink",
+                     *       "page_theme": "sage",
                      *       "primary_color": "#1B2A4A",
                      *       "status_colors": {
                      *         "error": "#B3261E",
@@ -13879,6 +14966,8 @@ export interface operations {
                      *       },
                      *       "font_key": "inter",
                      *       "is_customized": false,
+                     *       "nav_theme": "ink",
+                     *       "page_theme": "sage",
                      *       "primary_color": "#1B2A4A",
                      *       "status_colors": {
                      *         "error": "#B3261E",
@@ -13971,7 +15060,15 @@ export interface operations {
                     /**
                      * @example {
                      *       "valid": true,
-                     *       "checks": {}
+                     *       "checks": {},
+                     *       "page_theme": "string",
+                     *       "nav_theme": "string",
+                     *       "background_color": "string",
+                     *       "side_nav_color": "string",
+                     *       "side_nav_text_color": "string",
+                     *       "top_nav_color": "string",
+                     *       "top_nav_text_color": "string",
+                     *       "page_text_color": "string"
                      *     }
                      */
                     "application/json": components["schemas"]["BrandingValidateOut"];
@@ -14064,6 +15161,8 @@ export interface operations {
                      *       },
                      *       "font_key": "inter",
                      *       "is_customized": false,
+                     *       "nav_theme": "ink",
+                     *       "page_theme": "sage",
                      *       "primary_color": "#1B2A4A",
                      *       "status_colors": {
                      *         "error": "#B3261E",
@@ -14215,6 +15314,8 @@ export interface operations {
                      *       },
                      *       "font_key": "inter",
                      *       "is_customized": false,
+                     *       "nav_theme": "ink",
+                     *       "page_theme": "sage",
                      *       "primary_color": "#1B2A4A",
                      *       "status_colors": {
                      *         "error": "#B3261E",
@@ -14317,6 +15418,8 @@ export interface operations {
                      *       },
                      *       "font_key": "inter",
                      *       "is_customized": false,
+                     *       "nav_theme": "ink",
+                     *       "page_theme": "sage",
                      *       "primary_color": "#1B2A4A",
                      *       "status_colors": {
                      *         "error": "#B3261E",
@@ -14377,6 +15480,87 @@ export interface operations {
                      *       "error": {
                      *         "code": "VALIDATION_ERROR",
                      *         "message_key": "errors.common.validation",
+                     *         "details": {},
+                     *         "request_id": "req-1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_org_theme_api_v1_branding_theme_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "accent_color": "#F26B5B",
+                     *       "background_style": "mint",
+                     *       "contrast": {
+                     *         "primary": {
+                     *           "minimum": 4.5,
+                     *           "passes": true,
+                     *           "ratio": 14.1
+                     *         }
+                     *       },
+                     *       "font_key": "inter",
+                     *       "is_customized": false,
+                     *       "nav_theme": "ink",
+                     *       "page_theme": "sage",
+                     *       "primary_color": "#1B2A4A",
+                     *       "status_colors": {
+                     *         "error": "#B3261E",
+                     *         "success": "#1E7B3A",
+                     *         "warning": "#8A5A00"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["app__modules__m04_org_settings__schemas__BrandingOut"];
+                };
+            };
+            /** @description Missing or invalid access token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "req-1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not a member of an organization. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "FORBIDDEN",
+                     *         "message_key": "errors.common.forbidden",
                      *         "details": {},
                      *         "request_id": "req-1"
                      *       }
@@ -15322,6 +16506,8 @@ export interface operations {
                      *           "pass_mark_percent": 82.5,
                      *           "total_marks": 1,
                      *           "question_count": 1,
+                     *           "has_code": false,
+                     *           "code_question_count": 0,
                      *           "in_use": true,
                      *           "published_at": "2026-11-16T09:30:00Z",
                      *           "created_at": "2026-11-16T09:30:00Z"
@@ -15452,6 +16638,8 @@ export interface operations {
                      *           "pass_mark_percent": 82.5,
                      *           "total_marks": 1,
                      *           "question_count": 1,
+                     *           "has_code": false,
+                     *           "code_question_count": 0,
                      *           "in_use": true,
                      *           "published_at": "2026-11-16T09:30:00Z",
                      *           "created_at": "2026-11-16T09:30:00Z"
@@ -15678,6 +16866,8 @@ export interface operations {
                      *           "pass_mark_percent": 82.5,
                      *           "total_marks": 1,
                      *           "question_count": 1,
+                     *           "has_code": false,
+                     *           "code_question_count": 0,
                      *           "in_use": true,
                      *           "published_at": "2026-11-16T09:30:00Z",
                      *           "created_at": "2026-11-16T09:30:00Z"
@@ -15805,6 +16995,8 @@ export interface operations {
                      *           "pass_mark_percent": 82.5,
                      *           "total_marks": 1,
                      *           "question_count": 1,
+                     *           "has_code": false,
+                     *           "code_question_count": 0,
                      *           "in_use": true,
                      *           "published_at": "2026-11-16T09:30:00Z",
                      *           "created_at": "2026-11-16T09:30:00Z"
@@ -15922,6 +17114,8 @@ export interface operations {
                      *           "pass_mark_percent": 82.5,
                      *           "total_marks": 1,
                      *           "question_count": 1,
+                     *           "has_code": false,
+                     *           "code_question_count": 0,
                      *           "in_use": true,
                      *           "published_at": "2026-11-16T09:30:00Z",
                      *           "created_at": "2026-11-16T09:30:00Z"
@@ -16039,6 +17233,8 @@ export interface operations {
                      *           "pass_mark_percent": 82.5,
                      *           "total_marks": 1,
                      *           "question_count": 1,
+                     *           "has_code": false,
+                     *           "code_question_count": 0,
                      *           "in_use": true,
                      *           "published_at": "2026-11-16T09:30:00Z",
                      *           "created_at": "2026-11-16T09:30:00Z"
@@ -16148,6 +17344,8 @@ export interface operations {
                      *           "pass_mark_percent": 82.5,
                      *           "total_marks": 1,
                      *           "question_count": 1,
+                     *           "has_code": false,
+                     *           "code_question_count": 0,
                      *           "in_use": true,
                      *           "published_at": "2026-11-16T09:30:00Z",
                      *           "created_at": "2026-11-16T09:30:00Z"
@@ -16252,6 +17450,8 @@ export interface operations {
                      *       "pass_mark_percent": 82.5,
                      *       "total_marks": 1,
                      *       "question_count": 1,
+                     *       "has_code": false,
+                     *       "code_question_count": 0,
                      *       "in_use": true,
                      *       "published_at": "2026-11-16T09:30:00Z",
                      *       "created_at": "2026-11-16T09:30:00Z",
@@ -16273,7 +17473,8 @@ export interface operations {
                      *           "options": [],
                      *           "answer_key": {},
                      *           "model_answer": "string",
-                     *           "code_language": "string"
+                     *           "code_language": "string",
+                     *           "duration_minutes": 1
                      *         }
                      *       ]
                      *     }
@@ -16398,6 +17599,8 @@ export interface operations {
                      *       "pass_mark_percent": 82.5,
                      *       "total_marks": 1,
                      *       "question_count": 1,
+                     *       "has_code": false,
+                     *       "code_question_count": 0,
                      *       "in_use": true,
                      *       "published_at": "2026-11-16T09:30:00Z",
                      *       "created_at": "2026-11-16T09:30:00Z",
@@ -16419,7 +17622,8 @@ export interface operations {
                      *           "options": [],
                      *           "answer_key": {},
                      *           "model_answer": "string",
-                     *           "code_language": "string"
+                     *           "code_language": "string",
+                     *           "duration_minutes": 1
                      *         }
                      *       ]
                      *     }
@@ -16526,6 +17730,8 @@ export interface operations {
                      *       "pass_mark_percent": 82.5,
                      *       "total_marks": 1,
                      *       "question_count": 1,
+                     *       "has_code": false,
+                     *       "code_question_count": 0,
                      *       "in_use": true,
                      *       "published_at": "2026-11-16T09:30:00Z",
                      *       "created_at": "2026-11-16T09:30:00Z",
@@ -16547,7 +17753,8 @@ export interface operations {
                      *           "options": [],
                      *           "answer_key": {},
                      *           "model_answer": "string",
-                     *           "code_language": "string"
+                     *           "code_language": "string",
+                     *           "duration_minutes": 1
                      *         }
                      *       ]
                      *     }
@@ -16679,6 +17886,8 @@ export interface operations {
                      *       "pass_mark_percent": 82.5,
                      *       "total_marks": 1,
                      *       "question_count": 1,
+                     *       "has_code": false,
+                     *       "code_question_count": 0,
                      *       "in_use": true,
                      *       "published_at": "2026-11-16T09:30:00Z",
                      *       "created_at": "2026-11-16T09:30:00Z",
@@ -16700,7 +17909,8 @@ export interface operations {
                      *           "options": [],
                      *           "answer_key": {},
                      *           "model_answer": "string",
-                     *           "code_language": "string"
+                     *           "code_language": "string",
+                     *           "duration_minutes": 1
                      *         }
                      *       ]
                      *     }
@@ -16851,7 +18061,11 @@ export interface operations {
                      *           "marks": 1,
                      *           "options": [],
                      *           "blank_count": 1,
-                     *           "code_language": "string"
+                     *           "code_language": "string",
+                     *           "duration_minutes": 1,
+                     *           "languages": [],
+                     *           "samples": [],
+                     *           "starter_code": "string"
                      *         }
                      *       ]
                      *     }
@@ -16962,7 +18176,8 @@ export interface operations {
                      *           "options": [],
                      *           "answer_key": {},
                      *           "model_answer": "string",
-                     *           "code_language": "string"
+                     *           "code_language": "string",
+                     *           "duration_minutes": 1
                      *         }
                      *       ]
                      *     }
@@ -17102,7 +18317,8 @@ export interface operations {
                      *           "options": [],
                      *           "answer_key": {},
                      *           "model_answer": "string",
-                     *           "code_language": "string"
+                     *           "code_language": "string",
+                     *           "duration_minutes": 1
                      *         }
                      *       ]
                      *     }
@@ -17247,7 +18463,8 @@ export interface operations {
                      *       ],
                      *       "answer_key": {},
                      *       "model_answer": "string",
-                     *       "code_language": "string"
+                     *       "code_language": "string",
+                     *       "duration_minutes": 1
                      *     }
                      */
                     "application/json": components["schemas"]["QuestionOut"];
@@ -17498,7 +18715,8 @@ export interface operations {
                      *       ],
                      *       "answer_key": {},
                      *       "model_answer": "string",
-                     *       "code_language": "string"
+                     *       "code_language": "string",
+                     *       "duration_minutes": 1
                      *     }
                      */
                     "application/json": components["schemas"]["QuestionOut"];
@@ -17606,7 +18824,7 @@ export interface operations {
             query?: {
                 q?: string | null;
                 tag?: string | null;
-                type?: ("single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer") | null;
+                type?: ("single_choice" | "multi_choice" | "fill_blank" | "code_gap" | "short_answer" | "code_write") | null;
                 page?: number;
                 page_size?: number;
                 /** @description field:asc|desc[,field:asc|desc] */
@@ -21474,7 +22692,22 @@ export interface operations {
                      *       "started_at": "2026-11-16T09:30:00Z",
                      *       "deadline_at": "2026-11-16T09:30:00Z",
                      *       "remaining_seconds": 1,
-                     *       "question_count": 1
+                     *       "question_count": 1,
+                     *       "sectioned": false,
+                     *       "sections": [
+                     *         {
+                     *           "key": "string",
+                     *           "kind": "mcq",
+                     *           "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "position": 1,
+                     *           "title": "Senior Java Developer",
+                     *           "question_count": 1,
+                     *           "duration_seconds": 1,
+                     *           "remaining_seconds": 1,
+                     *           "state": "string",
+                     *           "switch_count": 1
+                     *         }
+                     *       ]
                      *     }
                      */
                     "application/json": components["schemas"]["StateOut"];
@@ -21651,7 +22884,21 @@ export interface operations {
                      *       "status": "active",
                      *       "started_at": "2026-11-16T09:30:00Z",
                      *       "deadline_at": "2026-11-16T09:30:00Z",
-                     *       "remaining_seconds": 1
+                     *       "remaining_seconds": 1,
+                     *       "sections": [
+                     *         {
+                     *           "key": "string",
+                     *           "kind": "mcq",
+                     *           "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "position": 1,
+                     *           "title": "Senior Java Developer",
+                     *           "question_count": 1,
+                     *           "duration_seconds": 1,
+                     *           "remaining_seconds": 1,
+                     *           "state": "string",
+                     *           "switch_count": 1
+                     *         }
+                     *       ]
                      *     }
                      */
                     "application/json": components["schemas"]["TimingOut"];
@@ -21759,7 +23006,21 @@ export interface operations {
                      *       "status": "active",
                      *       "started_at": "2026-11-16T09:30:00Z",
                      *       "deadline_at": "2026-11-16T09:30:00Z",
-                     *       "remaining_seconds": 1
+                     *       "remaining_seconds": 1,
+                     *       "sections": [
+                     *         {
+                     *           "key": "string",
+                     *           "kind": "mcq",
+                     *           "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "position": 1,
+                     *           "title": "Senior Java Developer",
+                     *           "question_count": 1,
+                     *           "duration_seconds": 1,
+                     *           "remaining_seconds": 1,
+                     *           "state": "string",
+                     *           "switch_count": 1
+                     *         }
+                     *       ]
                      *     }
                      */
                     "application/json": components["schemas"]["TimingOut"];
@@ -21863,7 +23124,21 @@ export interface operations {
                      *       "status": "active",
                      *       "started_at": "2026-11-16T09:30:00Z",
                      *       "deadline_at": "2026-11-16T09:30:00Z",
-                     *       "remaining_seconds": 1
+                     *       "remaining_seconds": 1,
+                     *       "sections": [
+                     *         {
+                     *           "key": "string",
+                     *           "kind": "mcq",
+                     *           "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "position": 1,
+                     *           "title": "Senior Java Developer",
+                     *           "question_count": 1,
+                     *           "duration_seconds": 1,
+                     *           "remaining_seconds": 1,
+                     *           "state": "string",
+                     *           "switch_count": 1
+                     *         }
+                     *       ]
                      *     }
                      */
                     "application/json": components["schemas"]["TimingOut"];
@@ -21968,7 +23243,9 @@ export interface operations {
     };
     questions_api_v1_exam_questions_get: {
         parameters: {
-            query?: never;
+            query?: {
+                section?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -21992,11 +23269,27 @@ export interface operations {
                      *           "marks": 1,
                      *           "options": [],
                      *           "blank_count": 1,
-                     *           "code_language": "string"
+                     *           "code_language": "string",
+                     *           "duration_minutes": 1,
+                     *           "languages": [],
+                     *           "samples": [],
+                     *           "starter_code": "string"
                      *         }
                      *       ],
                      *       "answers": {},
-                     *       "remaining_seconds": 1
+                     *       "remaining_seconds": 1,
+                     *       "section": {
+                     *         "key": "string",
+                     *         "kind": "mcq",
+                     *         "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *         "position": 1,
+                     *         "title": "Senior Java Developer",
+                     *         "question_count": 1,
+                     *         "duration_seconds": 1,
+                     *         "remaining_seconds": 1,
+                     *         "state": "string",
+                     *         "switch_count": 1
+                     *       }
                      *     }
                      */
                     "application/json": components["schemas"]["QuestionsOut"];
@@ -22040,6 +23333,159 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description SECTION_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "SECTION_NOT_FOUND",
+                     *         "message_key": "errors.exam.section_not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description EXAM_NOT_STARTED, EXAM_ALREADY_SUBMITTED, SECTION_NOT_RUNNING */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "EXAM_NOT_STARTED",
+                     *         "message_key": "errors.exam.not_started",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description VALIDATION_ERROR */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "VALIDATION_ERROR",
+                     *         "message_key": "errors.common.validation",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    sections_list_api_v1_exam_sections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "sections": [
+                     *         {
+                     *           "key": "string",
+                     *           "kind": "mcq",
+                     *           "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "position": 1,
+                     *           "title": "Senior Java Developer",
+                     *           "question_count": 1,
+                     *           "duration_seconds": 1,
+                     *           "remaining_seconds": 1,
+                     *           "state": "string",
+                     *           "switch_count": 1
+                     *         }
+                     *       ],
+                     *       "active_key": "string"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SectionsOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description LINK_BOUND_TO_OTHER_SESSION, FEATURE_DISABLED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "LINK_BOUND_TO_OTHER_SESSION",
+                     *         "message_key": "errors.exam.link_bound_to_other_session",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description SECTION_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "SECTION_NOT_FOUND",
+                     *         "message_key": "errors.exam.section_not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
             /** @description EXAM_NOT_STARTED, EXAM_ALREADY_SUBMITTED */
             409: {
                 headers: {
@@ -22057,6 +23503,259 @@ export interface operations {
                      *     }
                      */
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    section_enter_api_v1_exam_sections__key__enter_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "sections": [
+                     *         {
+                     *           "key": "string",
+                     *           "kind": "mcq",
+                     *           "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "position": 1,
+                     *           "title": "Senior Java Developer",
+                     *           "question_count": 1,
+                     *           "duration_seconds": 1,
+                     *           "remaining_seconds": 1,
+                     *           "state": "string",
+                     *           "switch_count": 1
+                     *         }
+                     *       ],
+                     *       "active_key": "string"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SectionsOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description LINK_BOUND_TO_OTHER_SESSION, FEATURE_DISABLED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "LINK_BOUND_TO_OTHER_SESSION",
+                     *         "message_key": "errors.exam.link_bound_to_other_session",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description SECTION_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "SECTION_NOT_FOUND",
+                     *         "message_key": "errors.exam.section_not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description SECTION_CLOSED, EXAM_NOT_STARTED, EXAM_TIME_OVER, EXAM_ALREADY_SUBMITTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "SECTION_CLOSED",
+                     *         "message_key": "errors.exam.section_closed",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    section_submit_api_v1_exam_sections__key__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "sections": [
+                     *         {
+                     *           "key": "string",
+                     *           "kind": "mcq",
+                     *           "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "position": 1,
+                     *           "title": "Senior Java Developer",
+                     *           "question_count": 1,
+                     *           "duration_seconds": 1,
+                     *           "remaining_seconds": 1,
+                     *           "state": "string",
+                     *           "switch_count": 1
+                     *         }
+                     *       ],
+                     *       "active_key": "string",
+                     *       "all_closed": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SectionSubmitOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description LINK_BOUND_TO_OTHER_SESSION, FEATURE_DISABLED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "LINK_BOUND_TO_OTHER_SESSION",
+                     *         "message_key": "errors.exam.link_bound_to_other_session",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description SECTION_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "SECTION_NOT_FOUND",
+                     *         "message_key": "errors.exam.section_not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description EXAM_NOT_STARTED, EXAM_ALREADY_SUBMITTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "EXAM_NOT_STARTED",
+                     *         "message_key": "errors.exam.not_started",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -22148,7 +23847,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description EXAM_TIME_OVER, EXAM_NOT_STARTED, EXAM_ALREADY_SUBMITTED */
+            /** @description EXAM_TIME_OVER, EXAM_NOT_STARTED, EXAM_ALREADY_SUBMITTED, SECTION_NOT_RUNNING */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -22195,7 +23894,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["HeartbeatIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -22207,7 +23910,25 @@ export interface operations {
                      * @example {
                      *       "status": "active",
                      *       "remaining_seconds": 1,
-                     *       "time_over": true
+                     *       "time_over": true,
+                     *       "ok": true,
+                     *       "server_time": "2026-11-16T09:30:00Z",
+                     *       "sections": [
+                     *         {
+                     *           "key": "string",
+                     *           "kind": "mcq",
+                     *           "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "position": 1,
+                     *           "title": "Senior Java Developer",
+                     *           "question_count": 1,
+                     *           "duration_seconds": 1,
+                     *           "remaining_seconds": 1,
+                     *           "state": "string",
+                     *           "switch_count": 1
+                     *         }
+                     *       ],
+                     *       "active_key": "string",
+                     *       "section_expired": "string"
                      *     }
                      */
                     "application/json": components["schemas"]["HeartbeatOut"];
@@ -22251,6 +23972,34 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "RATE_LIMITED",
+                     *         "message_key": "errors.common.rate_limited",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
         };
     };
     events_api_v1_exam_events_post: {
@@ -22281,6 +24030,14 @@ export interface operations {
                      *           "index": 1,
                      *           "event_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
                      *           "type": "string"
+                     *         }
+                     *       ],
+                     *       "events": [
+                     *         {
+                     *           "index": 1,
+                     *           "event_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "type": "string",
+                     *           "severity": "string"
                      *         }
                      *       ]
                      *     }
@@ -22812,6 +24569,7 @@ export interface operations {
                      *           "passed": null,
                      *           "decision": "string",
                      *           "flag_counts": {},
+                     *           "risk": null,
                      *           "submitted_at": null
                      *         }
                      *       ],
@@ -22953,6 +24711,11 @@ export interface operations {
                      *         }
                      *       ],
                      *       "flag_counts": {},
+                     *       "risk": {
+                     *         "score": 0,
+                     *         "level": "low",
+                     *         "flagged": false
+                     *       },
                      *       "timeline": [
                      *         {
                      *           "id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
@@ -22982,6 +24745,36 @@ export interface operations {
                      *           "is_override": true,
                      *           "decided_by": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
                      *           "created_at": "2026-11-16T09:30:00Z"
+                     *         }
+                     *       ],
+                     *       "photos_delete_after": "2026-11-16T09:30:00Z",
+                     *       "photos_purged_at": "2026-11-16T09:30:00Z",
+                     *       "photo_count": 0,
+                     *       "code_sections": [
+                     *         {
+                     *           "question_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "position": 1,
+                     *           "prompt_html": "<p>Example</p>",
+                     *           "language": "string",
+                     *           "code": "string",
+                     *           "duration_seconds": 1,
+                     *           "spent_seconds": 1,
+                     *           "switch_count": 1,
+                     *           "state": "string",
+                     *           "runs": {
+                     *             "count": null,
+                     *             "latest": null
+                     *           },
+                     *           "ai_review": {
+                     *             "status": null,
+                     *             "percent": null,
+                     *             "summary": null,
+                     *             "strengths": null,
+                     *             "issues": null,
+                     *             "reason": null,
+                     *             "reviewed_at": null
+                     *           },
+                     *           "human_verdict": null
                      *         }
                      *       ]
                      *     }
@@ -23053,6 +24846,289 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ai_summary_api_v1_attempts__attempt_id__ai_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "summary": {
+                     *         "headline": "string",
+                     *         "performance": {
+                     *           "overview": null,
+                     *           "strengths": null,
+                     *           "weak_areas": null
+                     *         },
+                     *         "answers": [],
+                     *         "integrity": {
+                     *           "overview": null,
+                     *           "highlights": null,
+                     *           "caveat": null
+                     *         },
+                     *         "disclaimer": "string"
+                     *       },
+                     *       "generated_at": "2026-11-16T09:30:00Z",
+                     *       "model": "string",
+                     *       "prompt_version": "string",
+                     *       "stale": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AiSummaryOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description FEATURE_DISABLED, FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "FEATURE_DISABLED",
+                     *         "message_key": "errors.common.feature_disabled",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "NOT_FOUND",
+                     *         "message_key": "errors.common.not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_ai_summary_api_v1_attempts__attempt_id__ai_summary_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AiSummaryGenerateIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "summary": {
+                     *         "headline": "string",
+                     *         "performance": {
+                     *           "overview": null,
+                     *           "strengths": null,
+                     *           "weak_areas": null
+                     *         },
+                     *         "answers": [],
+                     *         "integrity": {
+                     *           "overview": null,
+                     *           "highlights": null,
+                     *           "caveat": null
+                     *         },
+                     *         "disclaimer": "string"
+                     *       },
+                     *       "generated_at": "2026-11-16T09:30:00Z",
+                     *       "model": "string",
+                     *       "prompt_version": "string",
+                     *       "stale": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AiSummaryOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description FEATURE_DISABLED, FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "FEATURE_DISABLED",
+                     *         "message_key": "errors.common.feature_disabled",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "NOT_FOUND",
+                     *         "message_key": "errors.common.not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description CONFLICT, AI_NOT_CONFIGURED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "CONFLICT",
+                     *         "message_key": "errors.common.conflict",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description RATE_LIMITED, AI_LIMIT_REACHED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "RATE_LIMITED",
+                     *         "message_key": "errors.common.rate_limited",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description AI_PROVIDER_ERROR, AI_OUTPUT_INVALID */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "AI_PROVIDER_ERROR",
+                     *         "message_key": "errors.ai.provider_error",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
                 };
             };
         };
@@ -23148,6 +25224,254 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    photos_api_v1_attempts__attempt_id__photos_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                attempt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "asset_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "taken_at": "2026-11-16T09:30:00Z",
+                     *           "kind": "periodic",
+                     *           "event_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *           "event_type": "string",
+                     *           "severity": "string"
+                     *         }
+                     *       ],
+                     *       "next_cursor": "string",
+                     *       "total": 1
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PhotoPage"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description FEATURE_DISABLED, FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "FEATURE_DISABLED",
+                     *         "message_key": "errors.common.feature_disabled",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "NOT_FOUND",
+                     *         "message_key": "errors.common.not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description VALIDATION_ERROR */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "VALIDATION_ERROR",
+                     *         "message_key": "errors.common.validation",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    delete_photos_api_v1_attempts__attempt_id__photos_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhotosDeleteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "periodic": 1,
+                     *       "event": 1,
+                     *       "baseline": 1,
+                     *       "files": 1,
+                     *       "already_purged": false,
+                     *       "photos_purged_at": "2026-11-16T09:30:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PhotosDeletedOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description FEATURE_DISABLED, FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "FEATURE_DISABLED",
+                     *         "message_key": "errors.common.feature_disabled",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "NOT_FOUND",
+                     *         "message_key": "errors.common.not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description PHOTOS_DELETE_NOT_ALLOWED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "PHOTOS_DELETE_NOT_ALLOWED",
+                     *         "message_key": "errors.review.photos_delete_not_allowed",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description VALIDATION_ERROR */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "VALIDATION_ERROR",
+                     *         "message_key": "errors.common.validation",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
                 };
             };
         };
@@ -23272,6 +25596,297 @@ export interface operations {
                      *       "error": {
                      *         "code": "VALIDATION_ERROR",
                      *         "message_key": "errors.common.validation",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    set_code_verdict_api_v1_attempts__attempt_id__answers__question_id__verdict_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerdictIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "verdict": "accepted",
+                     *       "note": "Example text",
+                     *       "by_name": "string",
+                     *       "at": "2026-11-16T09:30:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CodeVerdictOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description FEATURE_DISABLED, FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "FEATURE_DISABLED",
+                     *         "message_key": "errors.common.feature_disabled",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "NOT_FOUND",
+                     *         "message_key": "errors.common.not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description CONFLICT */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "CONFLICT",
+                     *         "message_key": "errors.common.conflict",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description VALIDATION_ERROR */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "VALIDATION_ERROR",
+                     *         "message_key": "errors.common.validation",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    run_code_ai_review_api_v1_attempts__attempt_id__answers__question_id__ai_review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "done",
+                     *       "percent": 82.5,
+                     *       "summary": "string",
+                     *       "strengths": [
+                     *         "string"
+                     *       ],
+                     *       "issues": [
+                     *         "string"
+                     *       ],
+                     *       "reason": "Example text",
+                     *       "reviewed_at": "2026-11-16T09:30:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CodeAiReviewOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description FEATURE_DISABLED, FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "FEATURE_DISABLED",
+                     *         "message_key": "errors.common.feature_disabled",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "NOT_FOUND",
+                     *         "message_key": "errors.common.not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description CONFLICT, AI_NOT_CONFIGURED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "CONFLICT",
+                     *         "message_key": "errors.common.conflict",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description RATE_LIMITED, AI_LIMIT_REACHED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "RATE_LIMITED",
+                     *         "message_key": "errors.common.rate_limited",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description AI_PROVIDER_ERROR, AI_OUTPUT_INVALID */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "AI_PROVIDER_ERROR",
+                     *         "message_key": "errors.ai.provider_error",
                      *         "details": {},
                      *         "request_id": "r1"
                      *       }
@@ -28055,6 +30670,649 @@ export interface operations {
                      *     }
                      */
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    options_api_v1_exam_code_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "enabled": true,
+                     *       "languages": [
+                     *         "string"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["OptionsOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description LINK_BOUND_TO_OTHER_SESSION, FEATURE_DISABLED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "LINK_BOUND_TO_OTHER_SESSION",
+                     *         "message_key": "errors.exam.link_bound_to_other_session",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    run_api_v1_exam_code_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "run_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *       "passed": 1,
+                     *       "total": 1,
+                     *       "duration_ms": 1,
+                     *       "results": [
+                     *         {
+                     *           "index": 1,
+                     *           "input": "string",
+                     *           "expected": "string",
+                     *           "status": "passed",
+                     *           "actual": "string",
+                     *           "stderr": "string",
+                     *           "time_ms": 1
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "UNAUTHENTICATED",
+                     *         "message_key": "errors.common.unauthenticated",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description LINK_BOUND_TO_OTHER_SESSION, FEATURE_DISABLED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "LINK_BOUND_TO_OTHER_SESSION",
+                     *         "message_key": "errors.exam.link_bound_to_other_session",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "NOT_FOUND",
+                     *         "message_key": "errors.common.not_found",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description SECTION_NOT_RUNNING, EXAM_NOT_STARTED, EXAM_ALREADY_SUBMITTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "SECTION_NOT_RUNNING",
+                     *         "message_key": "errors.exam.section_not_running",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description VALIDATION_ERROR, RUNNER_LANGUAGE_UNSUPPORTED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "VALIDATION_ERROR",
+                     *         "message_key": "errors.common.validation",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description CODE_RUN_TOO_FREQUENT, CODE_RUN_LIMIT_REACHED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "CODE_RUN_TOO_FREQUENT",
+                     *         "message_key": "errors.code.run_too_frequent",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description RUNNER_UNAVAILABLE */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "RUNNER_UNAVAILABLE",
+                     *         "message_key": "errors.code.runner_unavailable",
+                     *         "details": {},
+                     *         "request_id": "r1"
+                     *       }
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_sso_api_v1_org_settings_sso_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "client_id": "7c1d2e3f-0000-4000-8000-123456789abc",
+                     *       "configured": true,
+                     *       "domains": [
+                     *         "acme.com"
+                     *       ],
+                     *       "enabled": true,
+                     *       "has_secret": true,
+                     *       "issuer": "https://login.microsoftonline.com/0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10/v2.0",
+                     *       "provider": "microsoft",
+                     *       "redirect_uri": "https://api.example.com/api/v1/auth/sso/callback",
+                     *       "scopes": "openid email profile",
+                     *       "sso_required": false,
+                     *       "status": "active",
+                     *       "tenant_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *       "verified": true,
+                     *       "verified_at": "2026-11-24T10:00:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SsoSettingsOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description FORBIDDEN / FEATURE_DISABLED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    put_sso_api_v1_org_settings_sso_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SsoSettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "client_id": "7c1d2e3f-0000-4000-8000-123456789abc",
+                     *       "configured": true,
+                     *       "domains": [
+                     *         "acme.com"
+                     *       ],
+                     *       "enabled": true,
+                     *       "has_secret": true,
+                     *       "issuer": "https://login.microsoftonline.com/0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10/v2.0",
+                     *       "provider": "microsoft",
+                     *       "redirect_uri": "https://api.example.com/api/v1/auth/sso/callback",
+                     *       "scopes": "openid email profile",
+                     *       "sso_required": false,
+                     *       "status": "active",
+                     *       "tenant_id": "0b6f5c0e-5d3a-4c8e-9a64-2f1c3e8d7a10",
+                     *       "verified": true,
+                     *       "verified_at": "2026-11-24T10:00:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SsoSettingsOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description FORBIDDEN / FEATURE_DISABLED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SSO_NOT_VERIFIED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description VALIDATION_ERROR */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_sso_api_v1_org_settings_sso_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "ok": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SsoOkOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description FORBIDDEN / FEATURE_DISABLED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    test_sso_api_v1_org_settings_sso_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "authorize_url": "https://idp.example.com/authorize?client_id=abc"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SsoTestOut"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description FORBIDDEN / FEATURE_DISABLED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SSO_NOT_CONFIGURED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description VALIDATION_ERROR */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    discover_api_v1_auth_sso_discover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SsoDiscoverIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "provider": "microsoft",
+                     *       "sso": true,
+                     *       "sso_required": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SsoDiscoverOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    start_api_v1_auth_sso_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SsoStartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "authorize_url": "https://idp.example.com/authorize?client_id=abc"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SsoStartOut"];
+                };
+            };
+            /** @description SSO_NOT_CONFIGURED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description VALIDATION_ERROR */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    callback_api_v1_auth_sso_callback_get: {
+        parameters: {
+            query?: {
+                /** @description Authorization code */
+                code?: string | null;
+                state?: string | null;
+                /** @description Provider error, if any */
+                error?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                /** @description Signed, HttpOnly, 10 minute cookie set by `/auth/sso/start` */
+                sso_state?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the web app (see description). */
+            303: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
         };

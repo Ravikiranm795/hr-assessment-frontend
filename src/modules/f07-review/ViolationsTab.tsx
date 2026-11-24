@@ -13,8 +13,24 @@ import { Badge } from '@/components/Badge'
 import { Modal } from '@/components/Modal'
 import { Textarea } from '@/components/Textarea'
 
-const TONE = { serious: 'error', moderate: 'warning', minor: 'info', info: 'neutral' } as const
-const RISK_TONE = { low: 'success', medium: 'warning', high: 'error' } as const
+export const TONE = { serious: 'error', moderate: 'warning', minor: 'info', info: 'neutral' } as const
+export const RISK_TONE = { low: 'success', medium: 'warning', high: 'error' } as const
+
+export function RiskBadges({ risk }: { risk: NonNullable<Attempt['risk']> }) {
+  const { t } = useTranslation()
+  return (
+    <>
+      <Badge tone={RISK_TONE[risk.level as keyof typeof RISK_TONE] ?? 'neutral'}>
+        {t('review.violations.risk.label')}: {t(`review.violations.risk.${risk.level}`, { defaultValue: risk.level })} ({t('review.violations.risk.score', { score: risk.score })})
+      </Badge>
+      {risk.flagged && <Badge tone="error">{t('review.violations.risk.flagged')}</Badge>}
+    </>
+  )
+}
+
+/** Periodic photos and section switches are not violations that need proof. */
+const NO_PROOF_TYPES = new Set(['snapshot', 'section_switch'])
+const hasProofSlot = (e: EventRow) => !NO_PROOF_TYPES.has(e.type)
 
 export function ViolationsTab({ attempt, onChanged }: { attempt: Attempt; onChanged: () => void }) {
   const { t, i18n } = useTranslation()
@@ -22,20 +38,16 @@ export function ViolationsTab({ attempt, onChanged }: { attempt: Attempt; onChan
   const tz = me?.organization?.timezone
   const [snapshot, setSnapshot] = useState<{ title: string; assetId: string } | null>(null)
   const [dismissing, setDismissing] = useState<EventRow | null>(null)
+  const [openProof, setOpenProof] = useState<number | null>(null)
+  // Prev/Next walks the violations that have a photo, in the order listed.
+  const proofs = attempt.timeline.filter((e) => hasProofSlot(e) && e.snapshot_asset_id)
 
   const total = attempt.timeline.length
   const sev = attempt.flag_counts.severity
   const typeText = (type: string) => (i18n.exists(`review.violations.type.${type}`) ? t(`review.violations.type.${type}`) : t('review.violations.type.unknown'))
 
   const risk = attempt.risk
-  const riskBadges = risk && (
-    <>
-      <Badge tone={RISK_TONE[risk.level] ?? 'neutral'}>
-        {t('review.violations.risk.label')}: {t(`review.violations.risk.${risk.level}`, { defaultValue: risk.level })} ({t('review.violations.risk.score', { score: risk.score })})
-      </Badge>
-      {risk.flagged && <Badge tone="error">{t('review.violations.risk.flagged')}</Badge>}
-    </>
-  )
+  const riskBadges = risk && <RiskBadges risk={risk} />
 
   if (total === 0)
     return (
@@ -69,11 +81,19 @@ export function ViolationsTab({ attempt, onChanged }: { attempt: Attempt; onChan
               {e.dismissed && <Badge>{t('review.violations.dismissed')}</Badge>}
             </div>
             <div className="flex gap-2">
-              {e.snapshot_asset_id && (
-                <Button size="sm" variant="ghost" onClick={() => setSnapshot({ title: typeText(e.type), assetId: e.snapshot_asset_id! })}>
-                  {t('review.violations.viewSnapshot')}
-                </Button>
-              )}
+              {hasProofSlot(e) &&
+                (e.snapshot_asset_id ? (
+                  <Button size="sm" onClick={() => setOpenProof(proofs.findIndex((p) => p.id === e.id))}>
+                    {t('review.violations.proof')}
+                  </Button>
+                ) : (
+                  <span
+                    title={t('review.violations.noPhotoReason')}
+                    className="inline-flex cursor-not-allowed items-center rounded-(--radius) border border-border px-3 py-1 text-xs text-muted opacity-70"
+                  >
+                    {t('review.violations.noPhoto')}
+                  </span>
+                ))}
               {!e.dismissed && (
                 <Button size="sm" variant="outline" onClick={() => setDismissing(e)}>
                   {t('review.violations.dismiss')}
@@ -85,6 +105,16 @@ export function ViolationsTab({ attempt, onChanged }: { attempt: Attempt; onChan
         ))}
       </ol>
 
+      {openProof !== null && proofs[openProof] && (
+        <SnapshotModal
+          attemptId={attempt.id}
+          assetId={proofs[openProof].snapshot_asset_id!}
+          title={`${typeText(proofs[openProof].type)} (${formatDateTime(proofs[openProof].occurred_at, tz)})`}
+          onClose={() => setOpenProof(null)}
+          onPrev={openProof > 0 ? () => setOpenProof(openProof - 1) : undefined}
+          onNext={openProof < proofs.length - 1 ? () => setOpenProof(openProof + 1) : undefined}
+        />
+      )}
       {snapshot && <SnapshotModal attemptId={attempt.id} {...snapshot} onClose={() => setSnapshot(null)} />}
       {dismissing && <DismissModal attemptId={attempt.id} event={dismissing} onClose={() => setDismissing(null)} onDone={onChanged} />}
     </div>
@@ -99,10 +129,13 @@ export function SnapshotModal({
   onClose,
   onPrev,
   onNext,
+  screenTab,
 }: {
   attemptId: string
   assetId: string
   title: string
+  /** Reserved for a future second tab "Screen" (screen capture proof). Not built; nothing passes it yet. */
+  screenTab?: React.ReactNode
   onClose: () => void
   onPrev?: () => void
   onNext?: () => void
@@ -110,6 +143,7 @@ export function SnapshotModal({
   const { t } = useTranslation()
   const [url, setUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<'camera' | 'screen'>('camera')
   const load = useMutation({
     mutationFn: () => api.get<{ url: string }>(`/api/v1/attempts/${attemptId}/snapshots/${assetId}/url`),
     onSuccess: (d) => setUrl(d.url),
@@ -127,9 +161,19 @@ export function SnapshotModal({
   }, [assetId])
   return (
     <Modal open onOpenChange={(open) => !open && onClose()} title={t('review.violations.snapshotTitle') + ': ' + title} wide>
-      {!url && !error && <Spinner label={t('common.loading')} />}
-      {error && <p role="alert" className="text-sm text-error">{error}</p>}
-      {url && <img src={url} alt={t('review.violations.snapshotAlt')} onError={reload} className="mx-auto max-h-[70vh] rounded-(--radius)" />}
+      {screenTab && (
+        <div className="mb-3 flex gap-2">
+          <Button size="sm" variant={tab === 'camera' ? 'primary' : 'outline'} onClick={() => setTab('camera')}>{t('review.violations.tabCamera')}</Button>
+          <Button size="sm" variant={tab === 'screen' ? 'primary' : 'outline'} onClick={() => setTab('screen')}>{t('review.violations.tabScreen')}</Button>
+        </div>
+      )}
+      {screenTab && tab === 'screen' ? screenTab : (
+        <>
+          {!url && !error && <Spinner label={t('common.loading')} />}
+          {error && <p role="alert" className="text-sm text-error">{error}</p>}
+          {url && <img src={url} alt={t('review.violations.snapshotAlt')} onError={reload} className="mx-auto max-h-[70vh] rounded-(--radius)" />}
+        </>
+      )}
       {(onPrev || onNext) && (
         <div className="mt-3 flex justify-between gap-2">
           <Button variant="outline" size="sm" onClick={onPrev} disabled={!onPrev}>{t('review.photos.prev')}</Button>

@@ -7,7 +7,7 @@ import type { ResolvedItem } from './nav'
 export function SubmenuPanel({ section }: { section: ResolvedItem }) {
   const { t } = useTranslation()
   return (
-    <nav className="nav-scope w-56 shrink-0 border-r border-border p-4" aria-label={t('nav.submenu')}>
+    <nav className="side-scope w-56 shrink-0 border-r border-border p-4" aria-label={t('nav.submenu')}>
       <h2 className="mb-3 px-3 text-xs font-semibold tracking-wide text-muted uppercase">{t(section.label)}</h2>
       <ul className="flex flex-col gap-1">
         {section.visibleChildren.map((child) => (

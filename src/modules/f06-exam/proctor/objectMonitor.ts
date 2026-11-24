@@ -1,14 +1,15 @@
-import { FilesetResolver, ObjectDetector } from '@mediapipe/tasks-vision'
+import type { ObjectDetector } from '@mediapipe/tasks-vision'
 import type { ExamEventType } from '../types'
 
 // Self-hosted, like the face model: no CDN at runtime.
 const WASM_PATH = '/mediapipe/wasm'
 const MODEL_PATH = '/mediapipe/efficientdet_lite0.tflite'
 
-export const OBJECT_SAMPLE_MS = 2000
+export const OBJECT_SAMPLE_MS = 1500
 const PHONE_CATEGORY = 'cell phone'
-const PHONE_MIN_SCORE = 0.5
-const PHONE_SAMPLES = 2 // consecutive positive samples
+const PHONE_MIN_SCORE = 0.4
+const PHONE_WINDOW = 3 // the last samples looked at
+const PHONE_SAMPLES = 2 // positives needed within the window
 const PHONE_COOLDOWN_MS = 30_000
 
 type Report = (type: ExamEventType, extra?: { durationMs?: number; meta?: Record<string, unknown> }) => void
@@ -19,6 +20,7 @@ let detectorPromise: Promise<ObjectDetector | null> | null = null
 export function loadObjectDetector(): Promise<ObjectDetector | null> {
   detectorPromise ??= (async () => {
     try {
+      const { FilesetResolver, ObjectDetector } = await import('@mediapipe/tasks-vision')
       const fileset = await FilesetResolver.forVisionTasks(WASM_PATH)
       return await ObjectDetector.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: MODEL_PATH, delegate: 'CPU' },
@@ -49,9 +51,9 @@ export function samplePhone(detector: ObjectDetector, video: HTMLVideoElement): 
   }
 }
 
-/** A phone in two samples in a row is one `phone_detected`; then quiet for the cooldown. */
+/** A phone in 2 of the last 3 samples is one `phone_detected`; then quiet for the cooldown. */
 export class ObjectWatch {
-  private run = 0
+  private recent: boolean[] = []
   private last = -Infinity
   private readonly report: Report
 
@@ -60,8 +62,9 @@ export class ObjectWatch {
   }
 
   tick(score: number, now = performance.now()) {
-    this.run = score >= PHONE_MIN_SCORE ? this.run + 1 : 0
-    if (this.run >= PHONE_SAMPLES && now - this.last >= PHONE_COOLDOWN_MS) {
+    this.recent.push(score >= PHONE_MIN_SCORE)
+    if (this.recent.length > PHONE_WINDOW) this.recent.shift()
+    if (this.recent.filter(Boolean).length >= PHONE_SAMPLES && now - this.last >= PHONE_COOLDOWN_MS) {
       this.last = now
       this.report('phone_detected', { meta: { score: Math.round(score * 100) / 100 } })
     }

@@ -12,7 +12,7 @@ import { errorText } from '@/core/api/errors'
 import { applyFieldErrors } from '@/core/forms'
 import type { TeamUser } from './types'
 
-const schema = z.object({ name: z.string().trim().min(1), email: z.string().trim().min(1) })
+const schema = z.object({ name: z.string().trim().min(1), email: z.string().trim().min(1), role: z.enum(['hr_user', 'engineer']) })
 type Values = z.infer<typeof schema>
 
 interface Props {
@@ -30,10 +30,10 @@ export function AddUserDialog({ open, onOpenChange, onCreated }: Props) {
     reset,
     setError,
     formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) })
+  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { role: 'hr_user' } })
 
   const create = useMutation({
-    mutationFn: (v: Values) => api.post<{ user: TeamUser; temporary_password: string }>('/api/v1/team/users', { ...v, role: 'hr_user' }),
+    mutationFn: (v: Values) => api.post<{ user: TeamUser; temporary_password: string }>('/api/v1/team/users', v),
     onSuccess: (data) => {
       reset()
       onOpenChange(false)
@@ -72,6 +72,15 @@ export function AddUserDialog({ open, onOpenChange, onCreated }: Props) {
         )}
         <Field label={t('team.add_dialog.name')} autoComplete="off" error={errors.name && (errors.name.type === 'server' ? errors.name.message : t('fieldErrors.required'))} {...register('name')} />
         <Field label={t('team.add_dialog.email')} type="email" autoComplete="off" error={errors.email && (errors.email.type === 'server' ? errors.email.message : t('fieldErrors.required'))} {...register('email')} />
+        <div className="space-y-1.5">
+          <label htmlFor="add-user-role" className="block text-sm font-medium">
+            {t('team.add_dialog.role')}
+          </label>
+          <select id="add-user-role" className="h-10 w-full rounded-(--radius) border border-border bg-surface px-3 text-sm" {...register('role')}>
+            <option value="hr_user">{t('team.role.hr_user')}</option>
+            <option value="engineer">{t('team.role.engineer')}</option>
+          </select>
+        </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}

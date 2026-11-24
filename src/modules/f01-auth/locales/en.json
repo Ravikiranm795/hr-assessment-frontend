@@ -1,0 +1,20 @@
+{
+  "ssoLogin": {
+    "continue": "Continue with {{provider}}",
+    "provider": {
+      "google": "Google",
+      "microsoft": "Microsoft",
+      "oidc": "single sign-on"
+    },
+    "orPassword": "or sign in with your password",
+    "requiredHint": "Your organization signs in through single sign-on.",
+    "usePassword": "Use password instead",
+    "signInWithPassword": "Sign in with password",
+    "finishing": "Finishing sign-in",
+    "error": {
+      "failed": "Single sign-on did not work. Try again, or ask your administrator for help.",
+      "expired": "That sign-in took too long or was interrupted. Please try again.",
+      "unavailable": "Single sign-on is not available right now. Please try again in a few minutes."
+    }
+  }
+}

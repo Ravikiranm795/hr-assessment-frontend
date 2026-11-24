@@ -1,6 +1,6 @@
 import {
-  DEFAULT_MARKS,
-  DEFAULT_SCORING,
+  defaultMarks,
+  defaultScoring,
   type AssessmentDetail,
   type QuestionIn,
   type QuestionOut,
@@ -28,6 +28,16 @@ export interface DraftSlot {
   accepted: string
 }
 
+export interface DraftSample {
+  key: string
+  input: string
+  expected: string
+}
+
+export const MAX_SAMPLES = 3
+export const MIN_MINUTES = 5
+export const MAX_MINUTES = 120
+
 export interface DraftQuestion {
   /** Stable client key; the server id is only known after the first save. */
   key: string
@@ -46,6 +56,12 @@ export interface DraftQuestion {
   key_points: string
   model_answer: string
   code_language: string
+  /** code_write: minutes of the section (text, validated 5..120). */
+  duration: string
+  /** code_write: allowed language ids. */
+  languages: string[]
+  samples: DraftSample[]
+  starter_code: string
   /** Last save error for this question (server text). */
   error: string | null
   fieldErrors: Record<string, string>
@@ -83,15 +99,19 @@ export function newQuestion(type: QuestionType): DraftQuestion {
     savedRev: 0,
     type,
     prompt_html: '',
-    marks: String(DEFAULT_MARKS[type]),
-    scoring_mode: DEFAULT_SCORING[type],
+    marks: String(defaultMarks(type)),
+    scoring_mode: defaultScoring(type),
     options: choice ? [0, 1].map(() => ({ key: uid(), text_html: '', is_correct: false })) : [],
     slots: type === 'fill_blank' || type === 'code_gap' ? [{ key: uid(), accepted: '' }] : [],
     case_sensitive: type === 'code_gap',
     partial: false,
     key_points: '',
     model_answer: '',
-    code_language: '',
+    code_language: type === 'code_write' ? 'python' : '',
+    duration: type === 'code_write' ? '30' : '',
+    languages: type === 'code_write' ? ['python'] : [],
+    samples: type === 'code_write' ? [{ key: uid(), input: '', expected: '' }] : [],
+    starter_code: '',
     error: null,
     fieldErrors: {},
   }
@@ -119,6 +139,14 @@ export function fromServer(q: QuestionOut): DraftQuestion {
     key_points: ((key.key_points as string[] | undefined) ?? []).join('\n'),
     model_answer: q.model_answer ?? '',
     code_language: q.code_language ?? '',
+    duration: q.duration_minutes != null ? String(q.duration_minutes) : '',
+    languages: Array.isArray(key.languages) ? (key.languages as string[]) : [],
+    samples: (Array.isArray(key.samples) ? (key.samples as { input?: string; expected?: string }[]) : []).map((s) => ({
+      key: uid(),
+      input: s.input ?? '',
+      expected: s.expected ?? '',
+    })),
+    starter_code: typeof key.starter_code === 'string' ? key.starter_code : '',
     error: null,
     fieldErrors: {},
   }
@@ -144,8 +172,21 @@ export function toPayload(d: DraftQuestion): QuestionIn {
   const body: QuestionIn = {
     type: d.type,
     prompt_html: d.prompt_html,
-    marks: Number(d.marks),
+    marks: d.type === 'code_write' ? 0 : Number(d.marks),
     scoring_mode: d.scoring_mode,
+  }
+  if (d.type === 'code_write') {
+    const languages = d.languages
+    body.duration_minutes = Number(d.duration)
+    body.answer_key = {
+      languages,
+      samples: d.samples.filter(validSample).map((s) => ({ input: s.input, expected: s.expected })),
+      starter_code: d.starter_code.trim() === '' ? null : d.starter_code,
+      key_points: lines(d.key_points),
+    }
+    body.code_language = languages.includes(d.code_language) ? d.code_language : (languages[0] ?? null)
+    body.model_answer = d.model_answer.trim() || null
+    return body
   }
   if (d.type === 'single_choice' || d.type === 'multi_choice') {
     body.options = d.options.filter((o) => htmlToText(o.text_html) !== '').map((o) => ({ text_html: o.text_html, is_correct: o.is_correct }))
@@ -180,12 +221,25 @@ export type IssueCode =
   | 'multiple_correct_options'
   | 'no_blanks'
   | 'blank_without_answers'
+  | 'no_samples'
+  | 'no_languages'
+  | 'duration_missing'
 
-export const SAVE_BLOCKING: IssueCode[] = ['prompt_empty', 'marks_invalid', 'model_answer_required']
+export const SAVE_BLOCKING: IssueCode[] = ['prompt_empty', 'marks_invalid', 'model_answer_required', 'no_samples', 'no_languages', 'duration_missing']
+
+/** A sample needs an expected output (the input may be empty). */
+export const validSample = (s: DraftSample) => s.expected.trim() !== ''
 
 export function questionIssues(d: DraftQuestion): IssueCode[] {
   const issues: IssueCode[] = []
   if (htmlToText(d.prompt_html) === '') issues.push('prompt_empty')
+  if (d.type === 'code_write') {
+    const minutes = Number(d.duration)
+    if (d.duration.trim() === '' || !Number.isInteger(minutes) || minutes < MIN_MINUTES || minutes > MAX_MINUTES) issues.push('duration_missing')
+    if (d.languages.length === 0) issues.push('no_languages')
+    if (!d.samples.some(validSample)) issues.push('no_samples')
+    return issues
+  }
   const marks = Number(d.marks)
   if (d.marks.trim() === '' || !Number.isFinite(marks) || marks <= 0) issues.push('marks_invalid')
   if (d.type === 'single_choice' || d.type === 'multi_choice') {

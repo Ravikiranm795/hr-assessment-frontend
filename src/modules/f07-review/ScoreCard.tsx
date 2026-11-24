@@ -12,7 +12,9 @@ function minutesTaken(a: Attempt) {
 export function ScoreCard({ attempt }: { attempt: Attempt }) {
   const { t } = useTranslation()
   const taken = minutesTaken(attempt)
-  const scored = attempt.score_percent !== null
+  const scored = attempt.score_percent !== null && attempt.score_percent !== undefined
+  // A code-only assessment has no scored marks: the API sends null for score_percent and passed.
+  const codeOnly = !scored && (attempt.code_sections?.length ?? 0) > 0 && attempt.total_marks === 0
   return (
     <section className="rounded-(--radius) border border-border bg-surface p-5 shadow-card" aria-labelledby="score-title">
       <h2 id="score-title" className="text-sm font-semibold text-muted">
@@ -20,15 +22,20 @@ export function ScoreCard({ attempt }: { attempt: Attempt }) {
       </h2>
       {scored ? (
         <div className="mt-3 flex items-end gap-4">
-          <p className="text-4xl font-semibold">{t('review.score.percent', { value: formatNumber(Math.round(attempt.score_percent!)) })}</p>
-          {attempt.passed !== null && <Badge tone={attempt.passed ? 'success' : 'error'}>{attempt.passed ? t('review.score.pass') : t('review.score.fail')}</Badge>}
+          <p className="text-4xl font-semibold">{t('review.score.percent', { value: formatNumber(Math.round(attempt.score_percent ?? 0)) })}</p>
+          {attempt.passed !== null && attempt.passed !== undefined && <Badge tone={attempt.passed ? 'success' : 'error'}>{attempt.passed ? t('review.score.pass') : t('review.score.fail')}</Badge>}
+        </div>
+      ) : codeOnly ? (
+        <div className="mt-3 space-y-1" data-testid="no-scored-questions">
+          <p className="text-sm font-medium">{t('review.score.noScored')}</p>
+          <p className="text-sm text-muted">{t('review.score.noScoredBody')}</p>
         </div>
       ) : (
         <p className="mt-3 text-sm text-muted">{t('review.score.notScored')}</p>
       )}
       <dl className="mt-3 space-y-1 text-sm text-muted">
-        <div>{t('review.score.passMark', { value: formatNumber(attempt.pass_mark_percent) })}</div>
-        {attempt.final_score !== null && <div>{t('review.score.marks', { got: formatNumber(attempt.final_score), total: formatNumber(attempt.total_marks) })}</div>}
+        {!codeOnly && <div>{t('review.score.passMark', { value: formatNumber(attempt.pass_mark_percent) })}</div>}
+        {attempt.final_score !== null && attempt.final_score !== undefined && !codeOnly && <div>{t('review.score.marks', { got: formatNumber(attempt.final_score), total: formatNumber(attempt.total_marks) })}</div>}
         {taken !== null && (
           <div>
             {t('review.score.timeTaken')}: {t('review.score.minutes', { count: taken })}

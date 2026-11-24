@@ -4,7 +4,15 @@ import { examApi } from '../examApi'
 import { isSessionLost, isTransient } from '../errors'
 import type { AnswerValue } from '../types'
 
-type Outcome = 'ok' | 'retry' | 'dropped' | 'stop'
+/** The local copy of unsent answers is keyed by a hash, so the invite token is never written to storage. */
+export async function storageKey(inviteToken: string) {
+  const bytes = new TextEncoder().encode(inviteToken)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
+  return `f6:answers:${hex.slice(0, 24)}`
+}
+
+type Outcome ='ok' | 'retry' | 'dropped' | 'stop'
 
 export interface AnswerSyncHandlers {
   /** The server's remaining seconds, returned by every successful save: the timer re-syncs to it. */

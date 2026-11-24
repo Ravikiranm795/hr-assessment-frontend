@@ -11,7 +11,8 @@ import { CameraVideo, useCamera } from '../proctor/camera'
 import { HEARTBEAT_FAIL_LIMIT, getProctorSessionId } from '../proctor/heartbeat'
 import { useFocusOnMount } from '../Screens'
 import type { AnswerValue, ExamQuestion, ExamState } from '../types'
-import { AnswerSync } from './answerSync'
+import { AnswerSync, storageKey } from './answerSync'
+import { SectionedSurface } from './SectionedSurface'
 import { Palette } from './Palette'
 import { QuestionView, isAnswered, type AnswerKind } from './QuestionView'
 import { formatClock, useServerClock } from './useServerClock'
@@ -25,15 +26,7 @@ const SUBMIT_TRIES = 4
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-/** The local copy of unsent answers is keyed by a hash, so the invite token is never written to storage. */
-async function storageKey(inviteToken: string) {
-  const bytes = new TextEncoder().encode(inviteToken)
-  const digest = await crypto.subtle.digest('SHA-256', bytes)
-  const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
-  return `f6:answers:${hex.slice(0, 24)}`
-}
-
-interface ExamRunnerProps {
+export interface ExamRunnerProps {
   state: ExamState
   inviteToken: string
   /** The page was loaded while the exam was already running (a reload). */
@@ -49,7 +42,7 @@ export function ExamRunner(props: ExamRunnerProps) {
   const heading = useFocusOnMount<HTMLHeadingElement>()
   const { t } = useTranslation()
 
-  if (confirmed) return <ExamSurface {...props} />
+  if (confirmed) return props.state.sectioned ? <SectionedSurface {...props} /> : <ExamSurface {...props} />
 
   // After a reload the browser needs a click to go fullscreen and to bring the camera back.
   const resume = () => {

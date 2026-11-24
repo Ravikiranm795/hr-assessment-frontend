@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import { RequireAccess } from '@/core/auth/guards'
-import { AssessmentsListPage } from './AssessmentsListPage'
-import { BuilderPage } from './BuilderPage'
+import { lazyNamed } from '@/app/lazyNamed'
+
+const AssessmentsListPage = lazyNamed(() => import('./AssessmentsListPage'), 'AssessmentsListPage')
+const BuilderPage = lazyNamed(() => import('./BuilderPage'), 'BuilderPage')
 
 const guard = (page: ReactNode) => (
-  <RequireAccess roles={['org_admin', 'hr_user']} flag="assessments">
+  <RequireAccess roles={['org_admin', 'hr_user', 'engineer']} flag="assessments">
     {page}
   </RequireAccess>
 )

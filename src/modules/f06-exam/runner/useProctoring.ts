@@ -36,7 +36,10 @@ export function useProctoring({ active, cameraRequired, snapshotIntervalSeconds,
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const report = useCallback(
-    (type: ExamEventType, extra?: { durationMs?: number; meta?: Record<string, unknown> }) =>
+    (
+      type: ExamEventType,
+      extra?: { durationMs?: number; meta?: Record<string, unknown>; frame?: Promise<Blob | null> },
+    ) =>
       reporter.current?.report(type, extra),
     [],
   )
@@ -80,7 +83,13 @@ export function useProctoring({ active, cameraRequired, snapshotIntervalSeconds,
     if (!active || !cameraRequired || !stream) return
     let cancelled = false
     let timer: ReturnType<typeof setInterval> | null = null
-    const watch = new FaceWatch((type, extra) => report(type, extra))
+    const watch = new FaceWatch(
+      (type, extra) => report(type, extra),
+      () => {
+        const video = monitorVideo.current
+        return video ? captureFrame(video) : Promise.resolve(null)
+      },
+    )
     faceWatch.current = watch
     const match = new FaceMatchWatch((type, extra) => report(type, extra))
     let embedder: ImageEmbedder | null = null
@@ -152,7 +161,7 @@ export function useProctoring({ active, cameraRequired, snapshotIntervalSeconds,
   /** Close open spells and send what is queued; call just before submitting. */
   const finish = useCallback(async () => {
     faceWatch.current?.finish()
-    await reporter.current?.flush()
+    await reporter.current?.flush(false, true) // proofs must be attached while the exam is still running
   }, [])
 
   return { report, online, fullscreenExits, blockedNote, setMonitorVideo, finish }

@@ -29,3 +29,5 @@ export type FlagKey =
   | 'policy_documents'
   | 'ai_provider_setup'
   | 'watermark'
+  | 'code_assessment'
+  | 'sso_signin'

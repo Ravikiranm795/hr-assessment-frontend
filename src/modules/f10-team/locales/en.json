@@ -9,7 +9,7 @@
       "active": "Active",
       "inactive": "Inactive"
     },
-    "add": "Add HR user",
+    "add": "Add user",
     "columns": {
       "name": "Name",
       "role": "Role",
@@ -20,6 +20,7 @@
     "role": {
       "org_admin": "Organization admin",
       "hr_user": "HR user",
+      "engineer": "Engineer",
       "super_admin": "Platform admin"
     },
     "status": {
@@ -43,7 +44,8 @@
       "reactivate": "Reactivate"
     },
     "add_dialog": {
-      "title": "Add an HR user",
+      "title": "Add a user",
+      "role": "Role",
       "body": "They get a one-time temporary password and must choose a new one at first sign-in.",
       "name": "Full name",
       "email": "Work email",

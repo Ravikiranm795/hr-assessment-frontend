@@ -1,6 +1,8 @@
 import type { RouteObject } from 'react-router-dom'
 import { RequireAccess } from '@/core/auth/guards'
-import { AuditPage } from './AuditPage'
+import { lazyNamed } from '@/app/lazyNamed'
+
+const AuditPage = lazyNamed(() => import('./AuditPage'), 'AuditPage')
 
 // The same screen serves both scopes: organization admins at /audit, the super admin read-only at /platform/audit.
 export const shellRoutes: RouteObject[] = [

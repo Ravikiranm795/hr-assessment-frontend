@@ -9,7 +9,7 @@ import { Textarea } from '@/components/Textarea'
 import { useToast } from '@/components/Toast'
 import { ApiError, errorText } from '@/core/api/errors'
 import { useAuth } from '@/core/auth/AuthProvider'
-import { assessmentsApi, keys, QUESTION_TYPES, type AssessmentDetail, type VersionOut } from '../api'
+import { assessmentsApi, keys, QUESTION_TYPES, type AssessmentDetail, type QuestionType, type VersionOut } from '../api'
 import { PreviewDialog } from '../preview/PreviewDialog'
 import { Banner } from '../ui/controls'
 import { Menu } from '../ui/Menu'
@@ -79,7 +79,10 @@ export function BuilderEditor({ assessment, version, canEdit }: Props) {
     }, 50)
   }
 
-  const addQuestion = (type: (typeof QUESTION_TYPES)[number]) => {
+  // Coding questions need the `code_assessment` flag (backend answers FEATURE_DISABLED otherwise).
+  const offeredTypes: QuestionType[] = hasFlag('code_assessment') ? [...QUESTION_TYPES, 'code_write'] : QUESTION_TYPES
+
+  const addQuestion = (type: QuestionType) => {
     const q = newQuestion(type)
     dispatch({ type: 'add', question: q })
     jump(q.key)
@@ -270,7 +273,7 @@ export function BuilderEditor({ assessment, version, canEdit }: Props) {
           {editable && (
             <Menu
               trigger={<Button>{t('assessments.questions.add')}</Button>}
-              items={QUESTION_TYPES.map((type) => ({ key: type, label: t(`assessments.question_type.${type}`), onSelect: () => addQuestion(type) }))}
+              items={offeredTypes.map((type) => ({ key: type, label: t(`assessments.question_type.${type}`), onSelect: () => addQuestion(type) }))}
             />
           )}
         </div>

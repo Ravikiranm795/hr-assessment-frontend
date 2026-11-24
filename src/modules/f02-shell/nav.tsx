@@ -31,11 +31,12 @@ export interface NavItem extends NavLeaf {
 
 const STAFF: Role[] = ['org_admin', 'hr_user']
 const ADMIN: Role[] = ['org_admin']
+const WITH_ENGINEER: Role[] = ['org_admin', 'hr_user', 'engineer']
 
 // Menu map from spec F2. A tab shows only if the role allows it AND the feature flag is on (F-06).
 export const NAV: NavItem[] = [
   { label: 'nav.dashboard', to: '/', icon: LayoutDashboard, roles: STAFF, flag: 'dashboard' },
-  { label: 'nav.assessments', to: '/assessments', icon: ClipboardList, roles: STAFF, flag: 'assessments' },
+  { label: 'nav.assessments', to: '/assessments', icon: ClipboardList, roles: WITH_ENGINEER, flag: 'assessments' },
   { label: 'nav.roles', to: '/roles', icon: Briefcase, roles: STAFF, flag: 'roles' },
   { label: 'nav.helpRequests', to: '/help-requests', icon: LifeBuoy, roles: STAFF, flag: 'help_requests' },
   { label: 'nav.reports', to: '/reports', icon: FileText, roles: ADMIN, flag: 'reports_chat' },
@@ -45,10 +46,11 @@ export const NAV: NavItem[] = [
     label: 'nav.settings',
     to: '/settings',
     icon: Settings,
-    roles: STAFF,
+    roles: WITH_ENGINEER,
     children: [
-      { label: 'settingsMenu.profile', to: '/settings/profile', roles: STAFF },
+      { label: 'settingsMenu.profile', to: '/settings/profile', roles: WITH_ENGINEER },
       { label: 'settingsMenu.security', to: '/settings/security', roles: ADMIN, flag: 'settings' },
+      { label: 'settingsMenu.signIn', to: '/settings/sign-in', roles: ADMIN, flag: 'sso_signin' },
       { label: 'settingsMenu.retention', to: '/settings/retention', roles: ADMIN, flag: 'settings' },
       { label: 'settingsMenu.invites', to: '/settings/invites', roles: ADMIN, flag: 'settings' },
       { label: 'settingsMenu.email', to: '/settings/email', roles: ADMIN, flag: 'settings' },
@@ -102,5 +104,6 @@ export function activeSection(items: ResolvedItem[], pathname: string) {
 
 /** The page a role lands on (main page). */
 export function homeFor(role: Role | null) {
-  return role === 'super_admin' ? '/platform/dashboard' : '/'
+  if (role === 'super_admin') return '/platform/dashboard'
+  return role === 'engineer' ? '/assessments' : '/'
 }

@@ -3,6 +3,9 @@
     "name": "HR Assessment Platform",
     "poweredBy": "Powered by MRK Innovations"
   },
+  "codeEditor": {
+    "tabHint": "Tab indents your code. Press Esc, then Tab, to move focus out of the editor."
+  },
   "common": {
     "loading": "Loading…",
     "retry": "Try again",
@@ -78,6 +81,7 @@
   },
   "settingsMenu": {
     "profile": "Profile",
+    "signIn": "Sign in",
     "security": "Security",
     "retention": "Retention",
     "invites": "Invites",

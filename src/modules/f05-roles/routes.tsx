@@ -1,7 +1,9 @@
 import type { RouteObject } from 'react-router-dom'
 import { RequireAccess } from '@/core/auth/guards'
-import { RoleDetailPage } from './RoleDetailPage'
-import { RolesListPage } from './RolesListPage'
+import { lazyNamed } from '@/app/lazyNamed'
+
+const RoleDetailPage = lazyNamed(() => import('./RoleDetailPage'), 'RoleDetailPage')
+const RolesListPage = lazyNamed(() => import('./RolesListPage'), 'RolesListPage')
 
 /** Open roles and invites (spec F5): staff only, behind the `roles` flag. */
 export const shellRoutes: RouteObject[] = [
